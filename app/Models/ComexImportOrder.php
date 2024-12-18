@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
-use App\Models\{Store, Provider, Country};
+use App\Enums\TransportType;
+use App\Enums\ImportOrderStatus;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Concerns\HasStoreTenancy;
+use App\Models\{Store, Provider, Country};
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -31,6 +33,8 @@ class ComexImportOrder extends Model
     ];
 
     protected $casts = [
+        'type' => TransportType::class,
+        'status' => ImportOrderStatus::class,
         'order_date' => 'date',
         'estimated_departure' => 'date',
         'actual_departure' => 'date',

@@ -92,6 +92,7 @@ class ContainersRelationManager extends RelationManager
                         thousandsSeparator: '.',
                         decimalSeparator: ','
                     )
+                    ->summarize(Tables\Columns\Summarizers\Sum::make())
                     ->sortable()
                     ->label('Costo'),
 

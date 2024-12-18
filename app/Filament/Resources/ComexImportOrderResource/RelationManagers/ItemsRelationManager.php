@@ -105,6 +105,7 @@ class ItemsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('quantity')
                     ->numeric()
                     ->sortable()
+                    ->summarize(Tables\Columns\Summarizers\Sum::make())
                     ->label('Cantidad'),
 
                 Tables\Columns\TextColumn::make('unit_price')
@@ -121,6 +122,7 @@ class ItemsRelationManager extends RelationManager
                         thousandsSeparator: '.',
                         decimalSeparator: ','
                     )
+                    ->summarize(Tables\Columns\Summarizers\Sum::make())
                     ->label('Precio Total'),
 
                 Tables\Columns\TextColumn::make('cif_unit')
@@ -129,6 +131,7 @@ class ItemsRelationManager extends RelationManager
                         thousandsSeparator: '.',
                         decimalSeparator: ','
                     )
+                    ->summarize(Tables\Columns\Summarizers\Sum::make())
                     ->label('CIF Unitario'),
 
                 Tables\Columns\TextColumn::make('documents_count')

@@ -33,17 +33,17 @@ class ComexDocument extends Model
         'factor',
     ];
 
-    // protected $casts = [
-    //     'document_type' => DocumentType::class,
-    //     'document_clause' => DocumentClauseType::class,
-    //     'document_date' => 'date',
-    //     'fob_total' => 'decimal:4',
-    //     'freight_total' => 'decimal:4',
-    //     'insurance_total' => 'decimal:4',
-    //     'total_paid' => 'decimal:4',
-    //     'pending_amount' => 'decimal:4',
-    //     'factor' => 'decimal:9',
-    // ];
+    protected $casts = [
+        'document_type' => DocumentType::class,
+        'document_clause' => DocumentClauseType::class,
+        'document_date' => 'date',
+        'fob_total' => 'decimal:4',
+        'freight_total' => 'decimal:4',
+        'insurance_total' => 'decimal:4',
+        'total_paid' => 'decimal:4',
+        'pending_amount' => 'decimal:4',
+        'factor' => 'decimal:9',
+    ];
 
     // protected $withCount = ['payments', 'items'];
 

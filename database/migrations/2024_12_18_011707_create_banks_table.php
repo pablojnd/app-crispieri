@@ -12,8 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('currencies', function (Blueprint $table) {
-            $table->id('id')->comment('Código ISO de la moneda');
+            $table->id();
             $table->string('name')->comment('Nombre de la moneda');
+            $table->string('code', 3)->nullable()->comment('Código ISO de la moneda');
+            $table->integer('code_adu')->nullable()->comment('Código aduana de la moneda'); // Eliminar auto_increment
             $table->string('symbol', 5)->comment('Símbolo de la moneda');
             $table->boolean('is_active')->default(true)->comment('Estado activo de la moneda');
             $table->timestamps();
@@ -63,6 +65,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('bank_balances');
         Schema::dropIfExists('banks');
+        Schema::dropIfExists('bank_codes');
+        Schema::dropIfExists('currencies');
     }
 };
