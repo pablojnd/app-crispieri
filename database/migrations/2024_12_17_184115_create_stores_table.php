@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('stores', function (Blueprint $table) {
-            $table->ulid('id')->primary();
+            $table->id();
             $table->string('name');
             $table->string('email')->unique();
             $table->string('logo')->nullable();
@@ -29,14 +29,14 @@ return new class extends Migration
 
         Schema::create('store_user', function (Blueprint $table) {
             $table->id();
-            $table->foreignUlid('store_id')->constrained();
-            $table->foreignUlid('user_id')->constrained();
+            $table->foreignId('store_id')->constrained();
+            $table->foreignId('user_id')->constrained();
             $table->timestamps();
         });
 
         Schema::create('store_settings', function (Blueprint $table) {
             $table->id();
-            $table->foreignUlid('store_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('store_id')->constrained()->cascadeOnDelete();
             $table->string('currency')->default('USD');
             $table->string('timezone')->default('UTC');
             $table->json('preferences')->nullable();
@@ -45,7 +45,7 @@ return new class extends Migration
 
         Schema::create('store_locations', function (Blueprint $table) {
             $table->id();
-            $table->foreignUlid('store_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('store_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('address');
             $table->string('phone')->nullable();

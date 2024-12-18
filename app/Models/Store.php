@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Store extends Model
 {
-    use HasFactory, HasUlids;
+    use HasFactory;
 
     protected $fillable = [
         'name',
@@ -33,5 +34,35 @@ class Store extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class);
+    }
+
+    public function banks(): HasMany
+    {
+        return $this->hasMany(Bank::class);
+    }
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    public function comexImportOrders(): HasMany
+    {
+        return $this->hasMany(ComexImportOrder::class);
+    }
+
+    public function comexDocuments(): HasMany
+    {
+        return $this->hasMany(ComexDocument::class);
+    }
+
+    public function comexContainers(): HasMany
+    {
+        return $this->hasMany(ComexContainer::class);
+    }
+
+    public function comexItems(): HasMany
+    {
+        return $this->hasMany(ComexItem::class);
     }
 }

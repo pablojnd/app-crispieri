@@ -16,7 +16,7 @@ use Illuminate\Support\Collection;
 
 class User extends Authenticatable implements FilamentUser, HasTenants
 {
-    use HasFactory, HasUlids, Notifiable;
+    use HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
@@ -37,7 +37,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants
         ];
     }
 
-    public function store(): BelongsToMany
+    public function stores(): BelongsToMany
     {
         return $this->belongsToMany(Store::class);
     }
@@ -45,6 +45,11 @@ class User extends Authenticatable implements FilamentUser, HasTenants
     public function getTenants(Panel $panel): Collection
     {
         return $this->stores;
+    }
+
+    public function getDefaultTenant(Panel $panel): ?Store
+    {
+        return $this->latestStore;
     }
 
     public function canAccessTenant(Model $tenant): bool

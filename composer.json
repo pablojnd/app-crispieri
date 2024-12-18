@@ -3,11 +3,16 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
-        "php": "^8.2",
-        "filament/filament": "^3.2",
+        "php": "^8.1",
+        "filament/filament": "^3.0",
+        "blade-ui-kit/blade-icons": "^1.5",
+        "blade-ui-kit/blade-heroicons": "^2.1",
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9"
     },
