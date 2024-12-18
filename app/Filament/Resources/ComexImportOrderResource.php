@@ -2,17 +2,19 @@
 
 namespace App\Filament\Resources;
 
+use Filament\Forms;
+use Filament\Tables;
+use Filament\Forms\Form;
+use Filament\Tables\Table;
+use App\Models\ComexImportOrder;
+use Filament\Resources\Resource;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ComexImportOrderExport;
+use Illuminate\Database\Eloquent\Builder;
 use App\Enums\{TransportType, ImportOrderStatus};
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\ComexImportOrderResource\Pages;
 use App\Filament\Resources\ComexImportOrderResource\RelationManagers;
-use App\Models\ComexImportOrder;
-use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
-use Filament\Tables;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ComexImportOrderResource extends Resource
 {
@@ -140,6 +142,11 @@ class ComexImportOrderResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('exportExcelBodega')
+                    ->label('Exportar Excel')
+                    ->action(function (ComexImportOrder $record) {
+                        return Excel::download(new ComexImportOrderExport($record), 'bodega.xlsx');
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
