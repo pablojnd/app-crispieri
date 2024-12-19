@@ -298,10 +298,15 @@ class DocumentsRelationManager extends RelationManager
                     ->query(fn(Builder $query) => $query->where('pending_amount', '>', 0))
                     ->label('Pendientes'),
             ])
+            ->headerActions([
+                Tables\Actions\CreateAction::make()->label('Agregar Documento'),
+            ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

@@ -141,12 +141,15 @@ class ComexImportOrderResource extends Resource
                     ->options(TransportType::class),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('exportExcelBodega')
-                    ->label('Exportar Excel')
-                    ->action(function (ComexImportOrder $record) {
-                        return Excel::download(new ComexImportOrderExport($record), 'bodega.xlsx');
-                    }),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                    Tables\Actions\Action::make('exportExcelBodega')
+                        ->label('Exportar Excel')
+                        ->action(function (ComexImportOrder $record) {
+                            return Excel::download(new ComexImportOrderExport($record), 'bodega.xlsx');
+                        }),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
