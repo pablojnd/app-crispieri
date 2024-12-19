@@ -2,171 +2,128 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\FromCollection;
+use App\Models\ComexImportOrder;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\WithStyles;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use Filament\Facades\Filament;
 
-class ComexImportOrderExport implements FromCollection, WithHeadings, WithMapping, WithStyles
+class ComexImportOrderExport implements FromArray, WithHeadings
 {
-    protected $comexImportOrder;
+    private const ORDER_COLUMNS = [
+        'Tienda',
+        'Número de Orden',
+        'Referencia Externa',
+        'Proveedor',
+        'País de Origen',
+        'Número SVE',
+        'Tipo de Transporte',
+        'Estado',
+        'Fecha de Orden',
+        'Salida Estimada',
+        'Salida Real',
+        'Llegada Estimada',
+        'Llegada Real',
+        'Total Contenedores',
+        'Total Items',
+    ];
 
-    public function __construct($comexImportOrder)
+    private const DOCUMENT_COLUMNS = [
+        'Número Documento',
+        'Tipo Documento',
+        'Fecha Documento',
+        'FOB',
+        'Flete',
+        'Seguro',
+        'CIF',
+        'Total Pagado',
+        'Monto Pendiente',
+        'Items',
+    ];
+
+    protected $record;
+
+    public function __construct(ComexImportOrder $record)
     {
-        $this->comexImportOrder = $comexImportOrder->load([
-            'provider',
-            'documents.containers.items.product',
-            'expenses.currency',
-        ]);
+        $this->record = $record;
     }
 
-    public function collection()
-    {
-        return collect([$this->comexImportOrder]);
-    }
-
-    public function headings(): array
+    private function getOrderData($order): array
     {
         return [
-            'Proveedor',
-            'Factura',
-            'Cantidad Contenedores',
-            'Descripción Mercadería',
-            'Medidas',
-            'Cantidad',
-            'UM',
-            'Fecha Estimada Embarque',
-            'Fecha Estimada Llegada',
-            'Estado',
-            'Número de Importación',
-            'Flete x Contenedor',
-            'Flete Total',
-            'Fob',
-            'Seguro',
-            'Monto Total Factura',
-            'Avance',
-            'Información Pago',
-            'Saldo',
-            'CIF',
-            'Gate In',
-            'THC',
-            'Apertura Manif',
-            'Garantía',
-            'Carta Responsabilidad',
-            'Emisión BL',
-            'Demurrage',
-            'Total Gastos Locales',
-            'Cantidad',
-            'Monto',
-            'Sub Total',
-            'Estadía',
-            'Monto',
-            'SubTotal',
-            'Total Neto',
-            'Cantidad Horas',
-            'Valor Hora',
-            'Total Neto',
-            'Cantidad Personas',
-            'Valor Unitario',
-            'Total',
-            'Costo Total Final',
+            $order->store->name,
+            $order->reference_number,
+            $order->external_reference,
+            $order->provider->name,
+            $order->originCountry->name,
+            $order->sve_registration_number,
+            $order->type->getLabel(),
+            $order->status->getLabel(),
+            $order->order_date?->format('d/m/Y'),
+            $order->estimated_departure?->format('d/m/Y'),
+            $order->actual_departure?->format('d/m/Y'),
+            $order->estimated_arrival?->format('d/m/Y'),
+            $order->actual_arrival?->format('d/m/Y'),
+            $order->containers->count(),
+            $order->items->count(),
         ];
     }
 
-    public function map($comexImportOrder): array
+    private function getDocumentData($document): array
     {
+        $items = $document->items->map(function ($item) {
+            return sprintf(
+                "%s (Qty: %s)",
+                $item->product->name ?? 'N/A',
+                $item->quantity ?? 0
+            );
+        })->implode(', ');
+
+        return [
+            $document->document_number ?? '',
+            $document->document_type?->getLabel() ?? '',
+            $document->document_date?->format('d/m/Y') ?? '',
+            number_format($document->fob_total ?? 0, 2),
+            number_format($document->freight_total ?? 0, 2),
+            number_format($document->insurance_total ?? 0, 2),
+            number_format($document->cif_total ?? 0, 2),
+            number_format($document->total_paid ?? 0, 2),
+            number_format($document->pending_amount ?? 0, 2),
+            $items,
+        ];
+    }
+
+    public function array(): array
+    {
+        $tenant = Filament::getTenant();
+
+        $order = ComexImportOrder::query()
+            ->where('store_id', $tenant->id)
+            ->where('id', $this->record->id)
+            ->with([
+                'store',
+                'provider',
+                'originCountry',
+                'items',
+                'containers',
+                'documents.items.product',
+                'documents.payments'
+            ])
+            ->first();
+
         $rows = [];
-        $firstRow = true;
 
-        foreach ($comexImportOrder->documents as $document) {
-            foreach ($document->containers as $container) {
-                $containerMapped = false;
-
-                foreach ($container->items as $item) {
-                    $rows[] = [
-                        $firstRow ? $comexImportOrder->provider->name ?? 'N/A' : '',
-                        $firstRow ? $document->document_number ?? 'N/A' : '',
-                        !$containerMapped ? $container->container_number ?? 'N/A' : '',
-                        $item->product->name ?? 'N/A',
-                        $item->product->dimensions ?? 'N/A',
-                        $item->pivot->quantity ?? 'N/A',
-                        $item->product->unit_measure ?? 'N/A',
-                        $firstRow ? $comexImportOrder->estimated_departure?->format('j F, Y') ?? 'N/A' : '',
-                        $firstRow ? $comexImportOrder->estimated_arrival?->format('j F, Y') ?? 'N/A' : '',
-                        $firstRow ? $comexImportOrder->status->value ?? 'N/A' : '', // Convert enum to string
-                        $firstRow ? $comexImportOrder->reference_number ?? 'N/A' : '',
-                        $container->freight_per_container ?? 'N/A',
-                        $container->total_freight ?? 'N/A',
-                        $document->fob_total ?? 'N/A',
-                        $document->insurance_total ?? 'N/A',
-                        $document->total_invoice_amount ?? 'N/A',
-                        $document->advance ?? 'N/A',
-                        $document->payment_info ?? 'N/A',
-                        $document->balance ?? 'N/A',
-                        $document->cif_total ?? 'N/A',
-                        // Aquí puedes agregar más columnas específicas si es necesario
-                    ];
-                    $firstRow = false;
-                    $containerMapped = true;
-                }
-            }
-        }
-
-        foreach ($comexImportOrder->expenses as $expense) {
-            $rows[] = [
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                '',
-                $expense->expense_type == 'gate_in' ? $expense->expense_amount : null,
-                $expense->expense_type == 'thc' ? $expense->expense_amount : null,
-                $expense->expense_type == 'manifest_opening' ? $expense->expense_amount : null,
-                $expense->expense_type == 'guarantee' ? $expense->expense_amount : null,
-                $expense->expense_type == 'liability_letter' ? $expense->expense_amount : null,
-                $expense->expense_type == 'bl_issuance' ? $expense->expense_amount : null,
-                $expense->expense_type == 'demurrage' ? $expense->expense_amount : null,
-                $expense->total_local_expenses ?? null,
-                $expense->quantity ?? null,
-                $expense->amount ?? null,
-                $expense->sub_total ?? null,
-                $expense->stay ?? null,
-                $expense->stay_amount ?? null,
-                $expense->sub_total_stay ?? null,
-                $expense->net_total ?? null,
-                $expense->hours_quantity ?? null,
-                $expense->hour_value ?? null,
-                $expense->net_total_hours ?? null,
-                $expense->persons_quantity ?? null,
-                $expense->unit_value ?? null,
-                $expense->total ?? null,
-                $expense->final_total_cost ?? null,
-            ];
+        foreach ($order->documents as $index => $document) {
+            $rows[] = array_merge(
+                $index === 0 ? $this->getOrderData($order) : array_fill(0, count(self::ORDER_COLUMNS), ''),
+                $this->getDocumentData($document)
+            );
         }
 
         return $rows;
     }
 
-    public function styles(Worksheet $sheet)
+    public function headings(): array
     {
-        foreach (range('A', $sheet->getHighestColumn()) as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
-        return [];
+        return array_merge(self::ORDER_COLUMNS, self::DOCUMENT_COLUMNS);
     }
 }

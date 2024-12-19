@@ -144,11 +144,18 @@ class ComexImportOrderResource extends Resource
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\DeleteAction::make(),
-                    Tables\Actions\Action::make('exportExcelBodega')
-                        ->label('Exportar Excel')
+                    Tables\Actions\Action::make('exportExcelInterno')
+                        ->label('Exportar Excel Interno')
+                        ->icon('heroicon-o-document-arrow-down')
                         ->action(function (ComexImportOrder $record) {
-                            return Excel::download(new ComexImportOrderExport($record), 'bodega.xlsx');
+                            return Excel::download(new ComexImportOrderExport($record), 'Orden_importacion_' . $record->reference_number . '.xlsx');
                         }),
+                    // Tables\Actions\Action::make('exportExcelBodega')
+                    //     ->label('Exportar Excel Bodega')
+                    //     ->icon('heroicon-o-clipboard-document-check')
+                    //     ->action(function (ComexImportOrder $record) {
+                    //         return Excel::download(new ComexImportOrderExport($record), 'Ordern_bodega.xlsx');
+                    //     }),
                 ]),
             ])
             ->bulkActions([

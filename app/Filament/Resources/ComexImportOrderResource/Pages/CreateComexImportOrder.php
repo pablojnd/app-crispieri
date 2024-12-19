@@ -16,9 +16,9 @@ class CreateComexImportOrder extends CreateRecord
         $this->data['reference_number'] = ComexImportOrder::generateReferenceNumber();
     }
 
-    protected function mutateFormDataBeforeCreate(array $data): array
-    {
-        $data['reference_number'] = ComexImportOrder::generateReferenceNumber();
-        return $data;
-    }
+    // protected function mutateFormDataBeforeCreate(array $data): array
+    // {
+    //     $data['reference_number'] = ComexImportOrder::generateReferenceNumber();
+    //     return $data;
+    // }
 }
