@@ -7,6 +7,7 @@ use BinaryCats\Sku\Concerns\SkuOptions;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Concerns\HasStoreTenancy;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -82,5 +83,12 @@ class Product extends Model
     public function measurementUnit()
     {
         return $this->belongsTo(MeasurementUnit::class);
+    }
+
+    protected function productName(): Attribute
+    {
+        return Attribute::make(
+            set: fn(string $value) => strtoupper($value),
+        );
     }
 }

@@ -41,6 +41,16 @@ class Store extends Model
         return $this->hasMany(Bank::class);
     }
 
+    public function categories(): HasMany
+    {
+        return $this->hasMany(Category::class);
+    }
+
+    public function brands(): HasMany
+    {
+        return $this->hasMany(Brand::class);
+    }
+
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);

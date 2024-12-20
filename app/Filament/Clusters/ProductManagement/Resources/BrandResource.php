@@ -28,7 +28,7 @@ class BrandResource extends Resource
 
     protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
-    protected static ?string $tenantRelationshipName = 'store';
+    // protected static ?string $tenantRelationshipName = 'store';
 
     protected static bool $isScopedToTenant = true;
 

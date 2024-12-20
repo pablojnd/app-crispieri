@@ -45,9 +45,9 @@ class ComexImportOrder extends Model
     // Método para generar el número de referencia
     public static function generateReferenceNumber()
     {
-        $initialNumber = 4582;
-        $lastOrder = self::latest('id')->first();
-        return $lastOrder ? $initialNumber + $lastOrder->id + 1 : $initialNumber;
+        $initialNumber = 2505;
+        $totalOrders = self::count();
+        return $initialNumber + $totalOrders + 1;
     }
 
     // Relaciones
