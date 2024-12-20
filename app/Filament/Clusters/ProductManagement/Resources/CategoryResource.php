@@ -10,6 +10,7 @@ use App\Models\Category;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
+use Filament\Facades\Filament;
 use Filament\Resources\Resource;
 use Filament\Pages\SubNavigationPosition;
 use Illuminate\Database\Eloquent\Builder;
@@ -28,7 +29,7 @@ class CategoryResource extends Resource
 
     protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
-    protected static ?string $tenantRelationshipName = 'store';
+    // protected static ?string $tenantRelationshipName = 'store';
 
     protected static bool $isScopedToTenant = true;
 
@@ -52,7 +53,12 @@ class CategoryResource extends Resource
                                     ->schema([
                                         Forms\Components\Select::make('parent_id')
                                             ->label('Categoría Padre')
-                                            ->relationship('parent', 'name')
+                                            ->relationship(
+                                                name: 'parent',
+                                                titleAttribute: 'name',
+                                                modifyQueryUsing: fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant())
+                                            )
+                                            ->preload()
                                             ->searchable()
                                             ->placeholder('Seleccione una categoría padre')
                                             ->columnSpan(1),

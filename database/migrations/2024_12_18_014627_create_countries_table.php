@@ -24,7 +24,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['name', 'region']);
+            $table->index('name');
         });
     }
 

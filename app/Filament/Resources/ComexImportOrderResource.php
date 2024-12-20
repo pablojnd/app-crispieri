@@ -2,17 +2,20 @@
 
 namespace App\Filament\Resources;
 
+use Filament\Forms;
+use Filament\Tables;
+use Filament\Forms\Form;
+use Filament\Tables\Table;
+use Filament\Facades\Filament;
+use App\Models\ComexImportOrder;
+use Filament\Resources\Resource;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ComexImportOrderExport;
+use Illuminate\Database\Eloquent\Builder;
 use App\Enums\{TransportType, ImportOrderStatus};
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\ComexImportOrderResource\Pages;
 use App\Filament\Resources\ComexImportOrderResource\RelationManagers;
-use App\Models\ComexImportOrder;
-use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
-use Filament\Tables;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ComexImportOrderResource extends Resource
 {
@@ -46,17 +49,30 @@ class ComexImportOrderResource extends Resource
 
                             Forms\Components\Select::make('provider_id')
                                 ->label('Proveedor')
-                                ->relationship('provider', 'name')
-                                ->searchable()
+                                ->relationship(
+                                    name: 'provider',
+                                    titleAttribute: 'name',
+                                    modifyQueryUsing: fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant())
+                                )
+                                ->searchable(['name', 'rut'])
                                 ->preload()
-                                ->required(),
+                                ->required()
+                                ->createOptionForm(function () {
+                                    return static::getProviderFormSchema();
+                                }),
 
                             Forms\Components\Select::make('origin_country_id')
                                 ->label('País de Origen')
-                                ->relationship('originCountry', 'name')
-                                ->searchable()
+                                ->relationship(
+                                    name: 'originCountry',
+                                    titleAttribute: 'name'
+                                )
+                                ->searchable(['name', 'code_iso_3'])
                                 ->preload()
-                                ->required(),
+                                ->required()
+                                ->createOptionForm(function () {
+                                    return static::getCountryFormSchema();
+                                }),
 
                             Forms\Components\TextInput::make('sve_registration_number')
                                 ->label('Número SVE'),
@@ -139,7 +155,22 @@ class ComexImportOrderResource extends Resource
                     ->options(TransportType::class),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                    Tables\Actions\Action::make('exportExcelInterno')
+                        ->label('Exportar Excel Interno')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->action(function (ComexImportOrder $record) {
+                            return Excel::download(new ComexImportOrderExport($record), 'Orden_importacion_' . $record->reference_number . '.xlsx');
+                        }),
+                    // Tables\Actions\Action::make('exportExcelBodega')
+                    //     ->label('Exportar Excel Bodega')
+                    //     ->icon('heroicon-o-clipboard-document-check')
+                    //     ->action(function (ComexImportOrder $record) {
+                    //         return Excel::download(new ComexImportOrderExport($record), 'Ordern_bodega.xlsx');
+                    //     }),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -164,6 +195,51 @@ class ComexImportOrderResource extends Resource
             'index' => Pages\ListComexImportOrders::route('/'),
             'create' => Pages\CreateComexImportOrder::route('/create'),
             'edit' => Pages\EditComexImportOrder::route('/{record}/edit'),
+        ];
+    }
+
+    protected static function getProviderFormSchema(): array
+    {
+        return [
+            Forms\Components\TextInput::make('name')
+                ->label('Nombre')
+                ->required(),
+            Forms\Components\TextInput::make('email')
+                ->label('Email')
+                ->email()
+                ->required(),
+            Forms\Components\TextInput::make('rut')
+                ->label('RUT')
+                ->required()
+                ->unique(),
+            Forms\Components\TextInput::make('phone')
+                ->label('Teléfono'),
+            Forms\Components\Select::make('type')
+                ->label('Tipo')
+                ->options([
+                    'manufacturer' => 'Fabricante',
+                    'distributor' => 'Distribuidor',
+                    'wholesaler' => 'Mayorista',
+                    'retailer' => 'Minorista'
+                ])
+                ->default('distributor')
+        ];
+    }
+
+    protected static function getCountryFormSchema(): array
+    {
+        return [
+            Forms\Components\TextInput::make('name')
+                ->label('Nombre del País')
+                ->required(),
+            Forms\Components\TextInput::make('code_iso_3')
+                ->label('Código ISO-3')
+                ->length(3)
+                ->unique(),
+            Forms\Components\TextInput::make('code_iso_2')
+                ->label('Código ISO-2')
+                ->length(2)
+                ->unique()
         ];
     }
 }

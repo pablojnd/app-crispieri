@@ -135,10 +135,15 @@ class ExpensesRelationManager extends RelationManager
                 // Tables\Filters\DateRangeFilter::make('expense_date')
                 //     ->label('Rango de Fechas'),
             ])
+            ->headerActions([
+                Tables\Actions\CreateAction::make()->label('Agregar Gasto'),
+            ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

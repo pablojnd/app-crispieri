@@ -4,8 +4,11 @@ namespace App\Filament\Resources\ComexImportOrderResource\RelationManagers;
 
 use Filament\Forms;
 use Filament\Tables;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Illuminate\Support\Str;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -44,14 +47,6 @@ class ItemsRelationManager extends RelationManager
                     ->createOptionForm(function () {
                         return static::getProductsFormSchema();
                     })
-                    // ->createOptionForm([
-                    //     Forms\Components\TextInput::make('name')
-                    //         ->required()
-                    //         ->maxLength(255),
-                    //     Forms\Components\TextInput::make('sku')
-                    //         ->required()
-                    //         ->maxLength(255),
-                    // ])
                     ->label('Producto')
                     ->columnSpanFull(),
 
@@ -90,7 +85,7 @@ class ItemsRelationManager extends RelationManager
                     ->preload()
                     ->label('Contenedores'),
             ])
-            ->columns(3);
+            ->columns(4);
     }
 
     public function table(Table $table): Table
@@ -105,6 +100,7 @@ class ItemsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('quantity')
                     ->numeric()
                     ->sortable()
+                    ->summarize(Tables\Columns\Summarizers\Sum::make())
                     ->label('Cantidad'),
 
                 Tables\Columns\TextColumn::make('unit_price')
@@ -121,6 +117,7 @@ class ItemsRelationManager extends RelationManager
                         thousandsSeparator: '.',
                         decimalSeparator: ','
                     )
+                    ->summarize(Tables\Columns\Summarizers\Sum::make())
                     ->label('Precio Total'),
 
                 Tables\Columns\TextColumn::make('cif_unit')
@@ -129,6 +126,7 @@ class ItemsRelationManager extends RelationManager
                         thousandsSeparator: '.',
                         decimalSeparator: ','
                     )
+                    ->summarize(Tables\Columns\Summarizers\Sum::make())
                     ->label('CIF Unitario'),
 
                 Tables\Columns\TextColumn::make('documents_count')
@@ -143,16 +141,159 @@ class ItemsRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Tables\Actions\CreateAction::make()->label('Agregar Item'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    protected static function getProductsFormSchema(): array
+    {
+        return [
+            Forms\Components\Tabs::make('Producto')
+                ->tabs([
+                    // Tab 1: Información Básica
+                    Forms\Components\Tabs\Tab::make('Información Básica')
+                        ->icon('heroicon-o-information-circle')
+                        ->schema([
+                            Forms\Components\Grid::make(3)->schema([
+                                Forms\Components\TextInput::make('product_name')
+                                    ->label('Nombre del Producto')
+                                    ->required()
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Get $get, Set $set, ?string $old, ?string $state) {
+                                        if (($get('slug') ?? '') !== Str::slug($old)) {
+                                            return;
+                                        }
+                                        $set('slug', Str::slug($state));
+                                    }),
+                                Forms\Components\TextInput::make('slug')
+                                    ->label('URL Amigable')
+                                    ->required(),
+                                Forms\Components\Select::make('category_id')
+                                    ->relationship('category', 'name')
+                                    ->label('Categoría')
+                                    ->required(),
+                                Forms\Components\Select::make('brand_id')
+                                    ->relationship('brand', 'name')
+                                    ->label('Marca'),
+                                Forms\Components\Select::make('measurement_unit_id')
+                                    ->relationship('measurementUnit', 'name')
+                                    ->label('Unidad de Medida')
+                                    ->required(),
+                                Forms\Components\TextInput::make('hs_code')
+                                    ->label('Código HS')
+                                    ->helperText('Código de clasificación arancelaria'),
+                                Forms\Components\Toggle::make('is_taxable')
+                                    ->label('Aplica Impuesto')
+                                    ->default(false),
+                                Forms\Components\TextInput::make('tax_rate')
+                                    ->label('Tasa de Impuesto (%)')
+                                    ->numeric()
+                                    ->visible(
+                                        fn(Get $get) =>
+                                        $get('is_taxable')
+                                    ),
+                            ]),
+                            Forms\Components\RichEditor::make('description')
+                                ->label('Descripción')
+                                ->columnSpanFull(),
+                        ]),
+
+                    // Tab 3: Inventario y Logística
+                    Forms\Components\Tabs\Tab::make('Inventario')
+                        ->icon('heroicon-o-truck')
+                        ->schema([
+                            Forms\Components\Grid::make(2)->schema([
+                                // Forms\Components\TextInput::make('stock')
+                                //     ->label('Stock Actual')
+                                //     ->numeric()
+                                //     ->required(),
+                                // Forms\Components\TextInput::make('minimum_stock')
+                                //     ->label('Stock Mínimo')
+                                //     ->numeric(),
+                                // Forms\Components\TextInput::make('maximum_stock')
+                                //     ->label('Stock Máximo')
+                                //     ->numeric(),
+                                Forms\Components\TextInput::make('packing_type')
+                                    ->label('Tipo de Empaque'),
+                                Forms\Components\TextInput::make('packing_quantity')
+                                    ->label('Cantidad por Empaque')
+                                    ->numeric(),
+                            ]),
+                            Forms\Components\Section::make('Dimensiones')
+                                ->description('Medidas del producto')
+                                ->schema([
+                                    Forms\Components\Grid::make(4)->schema([
+                                        Forms\Components\TextInput::make('weight')
+                                            ->label('Peso (kg)')
+                                            ->numeric(),
+                                        Forms\Components\TextInput::make('length')
+                                            ->label('Largo (cm)')
+                                            ->numeric(),
+                                        Forms\Components\TextInput::make('width')
+                                            ->label('Ancho (cm)')
+                                            ->numeric(),
+                                        Forms\Components\TextInput::make('height')
+                                            ->label('Alto (cm)')
+                                            ->numeric(),
+                                    ]),
+                                ]),
+                        ]),
+
+                    // Tab 4: Atributos
+                    // Forms\Components\Tabs\Tab::make('Atributos')
+                    //     ->icon('heroicon-o-adjustments-horizontal')
+                    //     ->schema([
+                    //         Forms\Components\Repeater::make('productAttributes')
+                    //             ->relationship()
+                    //             ->schema([
+                    //                 Forms\Components\Select::make('attribute_id')
+                    //                     ->label('Atributo')
+                    //                     ->relationship('attribute', 'name')
+                    //                     ->required()
+                    //                     ->live()
+                    //                     ->afterStateUpdated(
+                    //                         fn($state, Set $set) =>
+                    //                         $set('attribute_value_id', null)
+                    //                     ),
+                    //                 Forms\Components\Select::make('attribute_value_id')
+                    //                     ->label('Valor')
+                    //                     ->relationship('attributeValue', 'value')
+                    //                     ->required()
+                    //                     ->visible(
+                    //                         fn(Get $get) =>
+                    //                         filled($get('attribute_id'))
+                    //                     ),
+                    //             ])
+                    //             ->columns(2),
+                    //     ]),
+
+                    // Tab 6: Multimedia
+                    Forms\Components\Tabs\Tab::make('Multimedia')
+                        ->icon('heroicon-o-photo')
+                        ->schema([
+                            Forms\Components\FileUpload::make('image')
+                                ->label('Imágenes')
+                                ->multiple()
+                                ->image()
+                                ->panelLayout('grid')
+                                ->maxFiles(5)
+                                ->columnSpanFull(),
+                        ]),
+                ])
+                ->persistTab()
+                ->id('product-tabs')
+                ->columnSpanFull()
+        ];
     }
 }

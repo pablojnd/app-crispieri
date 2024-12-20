@@ -54,6 +54,7 @@ class ProductResource extends Resource
                                     ->label('Nombre del Producto')
                                     ->required()
                                     ->live(onBlur: true)
+                                    ->dehydrateStateUsing(fn(string $state) => strtoupper($state))
                                     ->afterStateUpdated(function (Get $get, Set $set, ?string $old, ?string $state) {
                                         if (($get('slug') ?? '') !== Str::slug($old)) {
                                             return;

@@ -10,25 +10,13 @@ class CurrencySeeder extends Seeder
     public function run(): void
     {
         $currencies = [
-            [
-                'name' => 'Dólar estadounidense',
-                'symbol' => '$',
-                'is_active' => true
-            ],
-            [
-                'name' => 'Euro',
-                'symbol' => '€',
-                'is_active' => true
-            ],
-            [
-                'name' => 'Boliviano',
-                'symbol' => 'Bs',
-                'is_active' => true
-            ],
+            ['name' => 'Dólar Estadounidense', 'code' => 'USD', 'symbol' => '$', 'decimal_places' => 2],
+            ['name' => 'Euro', 'code' => 'EUR', 'symbol' => '€', 'decimal_places' => 2],
+            // Agrega más monedas según necesites
         ];
 
         foreach ($currencies as $currency) {
-            Currency::create($currency);
+            Currency::create($currency + ['is_active' => true]);
         }
     }
 }

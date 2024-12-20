@@ -15,11 +15,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
 
-        User::factory()->create([
-            'name' => 'admin User',
-            'email' => 'admin@admin.com',
-            'password' => bcrypt('123456'),
-        ]);
+        // User::factory()->create([
+        //     'name' => 'admin User',
+        //     'email' => 'admin@admin.com',
+        //     'password' => bcrypt('123456'),
+        // ]);
 
         $this->call([
             StoreSeeder::class,
@@ -36,6 +36,7 @@ class DatabaseSeeder extends Seeder
             Comex\ComexContainerSeeder::class,
             Comex\ComexDocumentSeeder::class,
             Comex\ComexDocumentPaymentSeeder::class,
+            Comex\ComexExpenseSeeder::class,
         ]);
     }
 }

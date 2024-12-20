@@ -2,8 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\ComexExpense;
 use Illuminate\Database\Seeder;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class ComexExpenseSeeder extends Seeder
 {
@@ -12,6 +13,6 @@ class ComexExpenseSeeder extends Seeder
      */
     public function run(): void
     {
-        //
+        ComexExpense::factory()->count(50)->create();
     }
 }

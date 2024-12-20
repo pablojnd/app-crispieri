@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
+use BinaryCats\Sku\HasSku;
+use BinaryCats\Sku\Concerns\SkuOptions;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Concerns\HasStoreTenancy;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use HasFactory, HasStoreTenancy, SoftDeletes;
+    use HasFactory, HasStoreTenancy, HasSku, SoftDeletes;
 
     protected $fillable = [
         'product_name',
@@ -56,6 +59,17 @@ class Product extends Model
         'offer_end_date' => 'date',
     ];
 
+    public function skuOptions(): SkuOptions
+    {
+        return SkuOptions::make()
+            ->from(['label', 'product_name'])
+            ->target('sku')
+            ->using('_')
+            ->forceUnique(true)
+            ->generateOnCreate(true)
+            ->refreshOnUpdate(false);
+    }
+
     public function category()
     {
         return $this->belongsTo(Category::class);
@@ -69,5 +83,12 @@ class Product extends Model
     public function measurementUnit()
     {
         return $this->belongsTo(MeasurementUnit::class);
+    }
+
+    protected function productName(): Attribute
+    {
+        return Attribute::make(
+            set: fn(string $value) => strtoupper($value),
+        );
     }
 }
