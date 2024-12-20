@@ -9,18 +9,7 @@ class Currency extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'name',
-        'symbol',
-        'code',
-        'decimal_places',
-        'is_active'
-    ];
-
-    public function getFormattedNameAttribute(): string
-    {
-        return "{$this->code} - {$this->name}";
-    }
+    protected $fillable = ['name', 'code'];
 
     public function banks()
     {
