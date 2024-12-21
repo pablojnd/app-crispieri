@@ -36,6 +36,18 @@ class Store extends Model
         return $this->belongsToMany(User::class);
     }
 
+    public function addresses()
+    {
+        return $this->morphMany(Address::class, 'addressable');
+    }
+
+    public function mainAddress()
+    {
+        return $this->morphOne(Address::class, 'addressable')
+            ->where('type', 'main')
+            ->where('is_default', true);
+    }
+
     public function banks(): HasMany
     {
         return $this->hasMany(Bank::class);
@@ -54,6 +66,11 @@ class Store extends Model
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    public function providers(): HasMany
+    {
+        return $this->hasMany(Provider::class);
     }
 
     public function comexImportOrders(): HasMany

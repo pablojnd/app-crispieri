@@ -42,16 +42,6 @@ return new class extends Migration
             $table->json('preferences')->nullable();
             $table->timestamps();
         });
-
-        Schema::create('store_locations', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('store_id')->constrained()->cascadeOnDelete();
-            $table->string('name');
-            $table->string('address');
-            $table->string('phone')->nullable();
-            $table->boolean('is_main')->default(false);
-            $table->timestamps();
-        });
     }
 
     /**

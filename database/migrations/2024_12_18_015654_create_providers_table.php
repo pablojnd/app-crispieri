@@ -19,22 +19,12 @@ return new class extends Migration
             // Información básica
             $table->string('name');
             $table->string('contact_name')->nullable();
-            $table->string('email');
+            $table->string('email')->nullable();
             $table->string('phone')->nullable();
-            $table->string('rut')->unique();
-            $table->string('tax_id')->nullable();
-
-            // Tipo y estado
+            $table->string('rut')->unique()->nullable();
             $table->enum('type', ['manufacturer', 'distributor', 'wholesaler', 'retailer'])
                 ->default('distributor');
             $table->boolean('active')->default(true);
-            // Dirección
-            $table->string('address')->nullable();
-            $table->string('city')->nullable();
-            $table->string('state')->nullable();
-            $table->string('postal_code')->nullable();
-            $table->string('country')->nullable();
-            // Información adicional
             $table->string('website')->nullable();
             $table->text('observations')->nullable();
             $table->timestamps();

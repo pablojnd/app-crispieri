@@ -7,6 +7,7 @@ use Filament\Tables;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Enums\ContainerType;
+use Filament\Support\Enums\MaxWidth;
 use Filament\Resources\RelationManagers\RelationManager;
 
 class ContainersRelationManager extends RelationManager
@@ -108,8 +109,8 @@ class ContainersRelationManager extends RelationManager
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\EditAction::make(),
-                    Tables\Actions\DeleteAction::make(),
+                    Tables\Actions\EditAction::make()->modalWidth(MaxWidth::FiveExtraLarge),
+                    Tables\Actions\DeleteAction::make()->modalWidth(MaxWidth::FiveExtraLarge),
                 ]),
             ])
             ->bulkActions([

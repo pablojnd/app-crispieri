@@ -201,45 +201,162 @@ class ComexImportOrderResource extends Resource
     protected static function getProviderFormSchema(): array
     {
         return [
-            Forms\Components\TextInput::make('name')
-                ->label('Nombre')
-                ->required(),
-            Forms\Components\TextInput::make('email')
-                ->label('Email')
-                ->email()
-                ->required(),
-            Forms\Components\TextInput::make('rut')
-                ->label('RUT')
-                ->required()
-                ->unique(),
-            Forms\Components\TextInput::make('phone')
-                ->label('Teléfono'),
-            Forms\Components\Select::make('type')
-                ->label('Tipo')
-                ->options([
-                    'manufacturer' => 'Fabricante',
-                    'distributor' => 'Distribuidor',
-                    'wholesaler' => 'Mayorista',
-                    'retailer' => 'Minorista'
+            Forms\Components\Tabs::make('Proveedor')
+                ->tabs([
+                    Forms\Components\Tabs\Tab::make('Información Básica')
+                        ->schema([
+                            Forms\Components\Grid::make(2)
+                                ->schema([
+                                    Forms\Components\TextInput::make('name')
+                                        ->label('Nombre')
+                                        ->required()
+                                        ->helperText('Nombre comercial del proveedor')
+                                        ->maxLength(255),
+                                    Forms\Components\TextInput::make('contact_name')
+                                        ->label('Nombre de Contacto')
+                                        ->helperText('Persona de contacto principal')
+                                        ->maxLength(255),
+                                    Forms\Components\TextInput::make('email')
+                                        ->label('Email')
+                                        ->email()
+                                        ->helperText('Correo electrónico principal')
+                                        ->maxLength(255),
+                                    Forms\Components\TextInput::make('phone')
+                                        ->label('Teléfono')
+                                        ->helperText('Incluir código de país')
+                                        ->maxLength(255),
+                                    Forms\Components\TextInput::make('rut')
+                                        ->label('RUT')
+                                        ->unique(ignoreRecord: true)
+                                        ->helperText('RUT chileno sin puntos ni guión')
+                                        ->maxLength(255),
+                                    Forms\Components\Select::make('type')
+                                        ->label('Tipo de Proveedor')
+                                        ->options([
+                                            'manufacturer' => 'Fabricante',
+                                            'distributor' => 'Distribuidor',
+                                            'wholesaler' => 'Mayorista',
+                                            'retailer' => 'Minorista'
+                                        ])
+                                        ->default('distributor')
+                                        ->required(),
+                                    Forms\Components\TextInput::make('website')
+                                        ->label('Sitio Web')
+                                        ->url()
+                                        ->maxLength(255),
+                                    Forms\Components\Toggle::make('active')
+                                        ->label('Activo')
+                                        ->default(true)
+                                        ->helperText('Determina si el proveedor está disponible para nuevas órdenes'),
+                                    Forms\Components\Textarea::make('observations')
+                                        ->label('Observaciones')
+                                        ->columnSpanFull(),
+                                ]),
+                        ]),
+
+                    Forms\Components\Tabs\Tab::make('Direcciones')
+                        ->schema([
+                            Forms\Components\Repeater::make('addresses')
+                                ->label('Direcciones')
+                                ->schema([
+                                    Forms\Components\TextInput::make('name')
+                                        ->label('Nombre de la dirección')
+                                        ->required()
+                                        ->helperText('Ej: Oficina Principal, Bodega, etc.'),
+                                    Forms\Components\Grid::make(2)
+                                        ->schema([
+                                            Forms\Components\TextInput::make('street_address')
+                                                ->label('Dirección')
+                                                ->required()
+                                                ->maxLength(255),
+                                            Forms\Components\TextInput::make('street_number')
+                                                ->label('Número')
+                                                ->maxLength(255),
+                                            Forms\Components\TextInput::make('city')
+                                                ->label('Ciudad')
+                                                ->required()
+                                                ->maxLength(255),
+                                            Forms\Components\TextInput::make('state')
+                                                ->label('Estado/Región')
+                                                ->maxLength(255),
+                                            Forms\Components\TextInput::make('country')
+                                                ->label('País')
+                                                ->required()
+                                                ->maxLength(255),
+                                            Forms\Components\TextInput::make('postal_code')
+                                                ->label('Código Postal')
+                                                ->maxLength(255),
+                                        ]),
+                                    Forms\Components\Toggle::make('is_primary')
+                                        ->label('Dirección Principal')
+                                        ->helperText('Marcar como dirección principal'),
+                                ])
+                                ->itemLabel(fn(array $state): ?string => $state['name'] ?? null)
+                                ->collapsible()
+                                ->defaultItems(0)
+                                ->reorderable(),
+                        ]),
                 ])
-                ->default('distributor')
+                ->columnSpanFull(),
         ];
     }
 
     protected static function getCountryFormSchema(): array
     {
         return [
-            Forms\Components\TextInput::make('name')
-                ->label('Nombre del País')
-                ->required(),
-            Forms\Components\TextInput::make('code_iso_3')
-                ->label('Código ISO-3')
-                ->length(3)
-                ->unique(),
-            Forms\Components\TextInput::make('code_iso_2')
-                ->label('Código ISO-2')
-                ->length(2)
-                ->unique()
+            Forms\Components\Grid::make(2)->schema([
+                Forms\Components\Toggle::make('is_active')
+                    ->label('País Activo')
+                    ->default(true)
+                    ->helperText('Determina si el país está disponible para su uso'),
+
+                Forms\Components\TextInput::make('name')
+                    ->label('Nombre del País')
+                    ->required()
+                    ->unique(ignoreRecord: true)
+                    ->placeholder('Ej: Chile')
+                    ->maxLength(255)
+                    ->helperText('Nombre oficial del país'),
+
+                Forms\Components\TextInput::make('region')
+                    ->label('Región')
+                    ->placeholder('Ej: Sudamérica')
+                    ->maxLength(255)
+                    ->helperText('Región geográfica del país'),
+
+                Forms\Components\TextInput::make('code_iso_2')
+                    ->label('Código ISO-2')
+                    ->maxLength(2)
+                    ->unique(ignoreRecord: true)
+                    ->placeholder('Ej: CL')
+                    ->helperText('Código ISO 3166-1 alpha-2'),
+
+                Forms\Components\TextInput::make('code_iso_3')
+                    ->label('Código ISO-3')
+                    ->maxLength(3)
+                    ->unique(ignoreRecord: true)
+                    ->placeholder('Ej: CHL')
+                    ->helperText('Código ISO 3166-1 alpha-3'),
+
+                Forms\Components\TextInput::make('currency_code')
+                    ->label('Código de Moneda')
+                    ->placeholder('Ej: CLP')
+                    ->maxLength(255)
+                    ->helperText('Código ISO 4217 de la moneda'),
+
+                Forms\Components\TextInput::make('currency_name')
+                    ->label('Nombre de Moneda')
+                    ->placeholder('Ej: Peso Chileno')
+                    ->maxLength(255)
+                    ->helperText('Nombre oficial de la moneda'),
+
+                Forms\Components\TextInput::make('phone_prefix')
+                    ->label('Prefijo Telefónico')
+                    ->placeholder('Ej: +56')
+                    ->maxLength(255)
+                    ->helperText('Código de marcación internacional'),
+
+            ])
         ];
     }
 }

@@ -39,4 +39,16 @@ class Provider extends Model
     {
         return $this->belongsTo(Store::class);
     }
+
+    public function addresses()
+    {
+        return $this->morphMany(Address::class, 'addressable');
+    }
+
+    public function mainAddress()
+    {
+        return $this->morphOne(Address::class, 'addressable')
+            ->where('type', 'main')
+            ->where('is_default', true);
+    }
 }
