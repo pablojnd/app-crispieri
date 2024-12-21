@@ -18,6 +18,7 @@ enum ExpenseType: string implements HasLabel, HasColor, HasIcon
     case CONTAINER_MOVEMENT = 'container_movement';
     case CRANES = 'cranes';
     case UNLOADING = 'unloading';
+    case FREIGHT = 'freight';
     case OTHER = 'other';
 
     public function getLabel(): string
@@ -33,6 +34,7 @@ enum ExpenseType: string implements HasLabel, HasColor, HasIcon
             self::CONTAINER_MOVEMENT => 'Movimiento de Contenedor',
             self::CRANES => 'Grúas',
             self::UNLOADING => 'Descarga',
+            self::FREIGHT => 'Flete',
             self::OTHER => 'Otros',
         };
     }
@@ -50,6 +52,7 @@ enum ExpenseType: string implements HasLabel, HasColor, HasIcon
             self::CONTAINER_MOVEMENT => 'warning',
             self::CRANES => 'info',
             self::UNLOADING => 'primary',
+            self::FREIGHT => 'gray',
             self::OTHER => 'gray',
         };
     }
@@ -67,6 +70,7 @@ enum ExpenseType: string implements HasLabel, HasColor, HasIcon
             self::CONTAINER_MOVEMENT => 'heroicon-o-truck',
             self::CRANES => 'heroicon-o-arrow-up',
             self::UNLOADING => 'heroicon-o-arrow-down',
+            self::FREIGHT => 'heroicon-o-currency-dollar',
             self::OTHER => 'heroicon-o-document',
         };
     }

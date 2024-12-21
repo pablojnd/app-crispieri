@@ -12,6 +12,8 @@ enum MeasurementUnitType: string implements HasLabel
     case AREA = 'area';
     case COUNT = 'count';
     case TIME = 'time';
+    case SQUARE_METERS = 'square_meters';
+    case METER_LINEAL = 'meter_lineal';
     case OTHER = 'other';
 
     /**
@@ -28,6 +30,8 @@ enum MeasurementUnitType: string implements HasLabel
             self::AREA => 'Área',
             self::COUNT => 'Conteo',
             self::TIME => 'Tiempo',
+            self::SQUARE_METERS => 'Metros cuadrados',
+            self::METER_LINEAL => 'Metro lineal',
             self::OTHER => 'Otro'
         };
     }
@@ -46,6 +50,8 @@ enum MeasurementUnitType: string implements HasLabel
             self::AREA => 'heroicon-o-map',
             self::COUNT => 'heroicon-o-hashtag',
             self::TIME => 'heroicon-o-clock',
+            self::SQUARE_METERS => 'heroicon-o-grid',
+            self::METER_LINEAL => 'heroicon-o-ruler',
             self::OTHER => 'heroicon-o-question-mark-circle'
         };
     }

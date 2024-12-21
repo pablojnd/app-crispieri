@@ -40,74 +40,98 @@ class BrandResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255)
-                    ->live(onBlur: true)
-                    ->afterStateUpdated(function (Get $get, Set $set, ?string $old, ?string $state) {
-                        if (($get('slug') ?? '') !== Str::slug($old)) {
-                            return;
-                        }
+        return $form->schema([
+            Forms\Components\Grid::make()
+                ->schema([
+                    Forms\Components\Section::make('Información Básica')
+                        ->description('Datos principales de la marca')
+                        ->schema([
+                            Forms\Components\TextInput::make('name')
+                                ->label('Nombre')
+                                ->required()
+                                ->maxLength(255)
+                                ->live(onBlur: true)
+                                ->afterStateUpdated(
+                                    fn(Get $get, Set $set, ?string $old, ?string $state) =>
+                                    $get('slug') === Str::slug($old) ?
+                                        $set('slug', Str::slug($state)) : null
+                                ),
 
-                        $set('slug', Str::slug($state));
-                    }),
+                            Forms\Components\TextInput::make('slug')
+                                ->label('Slug')
+                                ->required()
+                                ->maxLength(255)
+                                ->unique(ignoreRecord: true)
+                                ->helperText('URL amigable para la marca'),
 
-                Forms\Components\TextInput::make('slug')
-                    ->required()
-                    ->maxLength(255)
-                    ->unique(ignoreRecord: true),
-                Forms\Components\TextInput::make('description')
-                    ->label('Descripción')
-                    ->maxLength(255)
-                    ->default(null),
-                Forms\Components\FileUpload::make('logo')
-                    ->label('Logo')
-                    ->image()
-                    ->directory('logos'),
-            ]);
+                            Forms\Components\Textarea::make('description')
+                                ->label('Descripción')
+                                ->maxLength(500)
+                                ->columnSpanFull(),
+                        ])->columns(2),
+
+                    Forms\Components\Section::make('Multimedia')
+                        ->schema([
+                            Forms\Components\FileUpload::make('logo')
+                                ->label('Logo')
+                                ->image()
+                                ->directory('brands')
+                                ->imageEditor()
+                                ->columnSpanFull(),
+                        ]),
+
+                    Forms\Components\Section::make('Configuración')
+                        ->schema([
+                            Forms\Components\Toggle::make('is_active')
+                                ->label('Activa')
+                                ->default(true),
+                            Forms\Components\Toggle::make('is_featured')
+                                ->label('Destacada'),
+                        ])->columns(2),
+                ])->columns(1),
+        ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->label('ID')
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->searchable(),
                 Tables\Columns\ImageColumn::make('logo')
                     ->label('Logo')
-                    ->size(80),
-                Tables\Columns\TextColumn::make('store.name')
-                    ->label('Tienda')
-                    ->searchable(),
+                    ->circular(),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('slug')
-                    ->label('Slug')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('description')
-                    ->label('Descripción')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('products_count')
+                    ->label('Productos')
+                    ->counts('products')
+                    ->sortable(),
+                Tables\Columns\IconColumn::make('is_active')
+                    ->label('Activa')
+                    ->boolean()
+                    ->sortable(),
+                Tables\Columns\IconColumn::make('is_featured')
+                    ->label('Destacada')
+                    ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Creado')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Actualizado')
+                    ->label('Creada')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\TernaryFilter::make('is_active')
+                    ->label('Activa'),
+                Tables\Filters\TernaryFilter::make('is_featured')
+                    ->label('Destacada'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

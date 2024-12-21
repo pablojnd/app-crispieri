@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ComexImportOrderResource\RelationManagers;
 
+use App\Enums\ExpenseType;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Currency;
@@ -42,19 +43,7 @@ class ExpensesRelationManager extends RelationManager
                     ->label('Fecha'),
 
                 Forms\Components\Select::make('expense_type')
-                    ->options([
-                        'gate_in' => 'Gate In',
-                        'thc' => 'THC',
-                        'manifest_opening' => 'Apertura de Manifiesto',
-                        'guarantee' => 'Garantía',
-                        'liability_letter' => 'Carta de Responsabilidad',
-                        'bl_issuance' => 'Emisión B/L',
-                        'demurrage' => 'Demurrage',
-                        'container_movement' => 'Movimiento de Contenedor',
-                        'cranes' => 'Grúas',
-                        'unloading' => 'Descarga',
-                        'other' => 'Otro'
-                    ])
+                    ->options(ExpenseType::class)
                     ->required()
                     ->label('Tipo de Gasto'),
 
@@ -118,19 +107,7 @@ class ExpensesRelationManager extends RelationManager
             ->defaultSort('expense_date', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('expense_type')
-                    ->options([
-                        'gate_in' => 'Gate In',
-                        'thc' => 'THC',
-                        'manifest_opening' => 'Apertura de Manifiesto',
-                        'guarantee' => 'Garantía',
-                        'liability_letter' => 'Carta de Responsabilidad',
-                        'bl_issuance' => 'Emisión B/L',
-                        'demurrage' => 'Demurrage',
-                        'container_movement' => 'Movimiento de Contenedor',
-                        'cranes' => 'Grúas',
-                        'unloading' => 'Descarga',
-                        'other' => 'Otro'
-                    ])
+                    ->options(ExpenseType::class)
                     ->label('Tipo'),
                 // Tables\Filters\DateRangeFilter::make('expense_date')
                 //     ->label('Rango de Fechas'),

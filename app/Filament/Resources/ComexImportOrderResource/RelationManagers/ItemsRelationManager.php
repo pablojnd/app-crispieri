@@ -189,6 +189,9 @@ class ItemsRelationManager extends RelationManager
                                 Forms\Components\Select::make('measurement_unit_id')
                                     ->relationship('measurementUnit', 'name')
                                     ->label('Unidad de Medida')
+                                    // ->createOptionForm(function () {
+                                    //     return static::getMeasurementUnitsFormSchema();
+                                    // })
                                     ->required(),
                                 Forms\Components\TextInput::make('hs_code')
                                     ->label('Código HS')

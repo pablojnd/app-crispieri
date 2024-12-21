@@ -2,9 +2,10 @@
 
 namespace App\Filament\Resources\ComexImportOrderResource\Pages;
 
-use App\Filament\Resources\ComexImportOrderResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
+use App\Filament\Resources\ComexImportOrderResource;
+use App\Filament\Resources\ComexImportOrderResource\Widgets\ImportOrderStats;
 
 class ListComexImportOrders extends ListRecords
 {
@@ -14,6 +15,13 @@ class ListComexImportOrders extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
+        ];
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            ImportOrderStats::class,
         ];
     }
 }
