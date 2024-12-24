@@ -11,8 +11,10 @@ use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
 use Filament\Facades\Filament;
+use App\Models\ProductAttribute;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\MaxWidth;
+use App\Models\ProductAttributeValue;
 use Filament\Pages\SubNavigationPosition;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Clusters\ProductManagement;
@@ -157,32 +159,20 @@ class ProductResource extends Resource
                         ]),
 
                     // Tab 4: Atributos
-                    // Forms\Components\Tabs\Tab::make('Atributos')
-                    //     ->icon('heroicon-o-adjustments-horizontal')
-                    //     ->schema([
-                    //         Forms\Components\Repeater::make('productAttributes')
-                    //             ->relationship()
-                    //             ->schema([
-                    //                 Forms\Components\Select::make('attribute_id')
-                    //                     ->label('Atributo')
-                    //                     ->relationship('attribute', 'name')
-                    //                     ->required()
-                    //                     ->live()
-                    //                     ->afterStateUpdated(
-                    //                         fn($state, Set $set) =>
-                    //                         $set('attribute_value_id', null)
-                    //                     ),
-                    //                 Forms\Components\Select::make('attribute_value_id')
-                    //                     ->label('Valor')
-                    //                     ->relationship('attributeValue', 'value')
-                    //                     ->required()
-                    //                     ->visible(
-                    //                         fn(Get $get) =>
-                    //                         filled($get('attribute_id'))
-                    //                     ),
-                    //             ])
-                    //             ->columns(2),
-                    //     ]),
+                    Forms\Components\Tabs\Tab::make('Atributos')
+                        ->icon('heroicon-o-adjustments-horizontal')
+                        ->schema([
+                            Forms\Components\Repeater::make('members')
+                                ->schema([
+                                    Forms\Components\Select::make('role')
+                                        ->relationship('attributes', 'attribute_name')
+                                        ->required(),
+                                    Forms\Components\Select::make('role')
+                                        ->relationship('attributeValues', 'value_name')
+                                        ->required(),
+                                ])
+                                ->columns(2)
+                        ]),
 
                     // Tab 6: Datos de Proveedor
                     Forms\Components\Tabs\Tab::make('Proveedor')

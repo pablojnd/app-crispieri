@@ -209,10 +209,12 @@ return new class extends Migration
                 'container_movement',
                 'cranes',
                 'unloading',
+                'freight',
                 'other'
             ])->comment('Tipo de gasto');
             $table->decimal('expense_quantity', 8, 2)->nullable()->comment('Cantidad del gasto');
             $table->decimal('expense_amount', 15, 4)->default(0)->comment('Monto del gasto');
+            $table->boolean('pay_status')->default(false)->comment('Estado del gasto');
             $table->text('notes')->nullable()->comment('Notas adicionales');
             $table->timestamps();
             $table->softDeletes();

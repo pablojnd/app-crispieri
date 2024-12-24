@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Store;
-use App\Enums\MeasurementUnitType;
 use App\Models\MeasurementUnit;
 use Illuminate\Database\Seeder;
 
@@ -19,20 +18,17 @@ class MeasurementUnitSeeder extends Seeder
                 [
                     'name' => 'Kilogramo',
                     'abbreviation' => 'kg',
-                    'type' => MeasurementUnitType::WEIGHT,
                     'is_base_unit' => true,
                     'conversion_factor' => 1
                 ],
                 [
                     'name' => 'Gramo',
                     'abbreviation' => 'g',
-                    'type' => MeasurementUnitType::WEIGHT,
                     'conversion_factor' => 0.001
                 ],
                 [
                     'name' => 'Libra',
                     'abbreviation' => 'lb',
-                    'type' => MeasurementUnitType::WEIGHT,
                     'conversion_factor' => 0.453592
                 ],
             ]);
@@ -42,14 +38,12 @@ class MeasurementUnitSeeder extends Seeder
                 [
                     'name' => 'Litro',
                     'abbreviation' => 'L',
-                    'type' => MeasurementUnitType::VOLUME,
                     'is_base_unit' => true,
                     'conversion_factor' => 1
                 ],
                 [
                     'name' => 'Mililitro',
                     'abbreviation' => 'ml',
-                    'type' => MeasurementUnitType::VOLUME,
                     'conversion_factor' => 0.001
                 ],
             ]);
@@ -59,14 +53,12 @@ class MeasurementUnitSeeder extends Seeder
                 [
                     'name' => 'Metro',
                     'abbreviation' => 'm',
-                    'type' => MeasurementUnitType::LENGTH,
                     'is_base_unit' => true,
                     'conversion_factor' => 1
                 ],
                 [
                     'name' => 'Centímetro',
                     'abbreviation' => 'cm',
-                    'type' => MeasurementUnitType::LENGTH,
                     'conversion_factor' => 0.01
                 ],
             ]);
@@ -76,14 +68,12 @@ class MeasurementUnitSeeder extends Seeder
                 [
                     'name' => 'Unidad',
                     'abbreviation' => 'u',
-                    'type' => MeasurementUnitType::COUNT,
                     'is_base_unit' => true,
                     'conversion_factor' => 1
                 ],
                 [
                     'name' => 'Docena',
                     'abbreviation' => 'doc',
-                    'type' => MeasurementUnitType::COUNT,
                     'conversion_factor' => 12
                 ],
             ]);

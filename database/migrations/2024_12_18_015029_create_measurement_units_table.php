@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\MeasurementUnitType;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
@@ -19,7 +18,6 @@ return new class extends Migration
                 ->cascadeOnDelete();
             $table->string('name')->comment('Nombre de la unidad de medida');
             $table->string('abbreviation')->comment('Abreviatura');
-            $table->string('type')->default(MeasurementUnitType::COUNT->value);
             $table->text('description')->nullable();
             $table->boolean('is_base_unit')->default(false);
             $table->decimal('conversion_factor', 10, 4)->nullable()->comment('Factor de conversión a unidad base');

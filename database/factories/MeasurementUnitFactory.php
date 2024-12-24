@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Models\Store;
-use App\Enums\MeasurementUnitType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -22,7 +21,6 @@ class MeasurementUnitFactory extends Factory
             'store_id' => Store::factory(),
             'name' => $this->faker->unique()->word(),
             'abbreviation' => $this->faker->unique()->lexify('??'),
-            'type' => $this->faker->randomElement(MeasurementUnitType::toArray()),
             'description' => $this->faker->sentence(),
             'is_base_unit' => $this->faker->boolean(20),
             'conversion_factor' => $this->faker->optional()->randomFloat(4, 0.0001, 1000),

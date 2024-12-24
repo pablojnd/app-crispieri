@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\MeasurementUnitType;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Concerns\HasStoreTenancy;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -25,11 +24,10 @@ class MeasurementUnit extends Model
     protected $casts = [
         'is_base_unit' => 'boolean',
         'conversion_factor' => 'decimal:4',
-        'type' => MeasurementUnitType::class
     ];
 
-    // public function products(): HasMany
-    // {
-    //     return $this->hasMany(Product::class);
-    // }
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
 }

@@ -37,6 +37,7 @@ class DatabaseSeeder extends Seeder
             Comex\ComexDocumentSeeder::class,
             Comex\ComexDocumentPaymentSeeder::class,
             Comex\ComexExpenseSeeder::class,
+            // ProductAttributeSeeder::class,
         ]);
     }
 }

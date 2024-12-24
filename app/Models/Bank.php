@@ -15,10 +15,14 @@ class Bank extends Model
     protected $fillable = [
         'store_id',
         'bank_code_id',
-        'name',
-        'account_number',
         'currency_id',
-        'notes'
+        'account_number',
+        'account_type',
+        'is_active'
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean'
     ];
 
     public function store()
@@ -45,6 +49,17 @@ class Bank extends Model
     public function latestBalance()
     {
         return $this->hasOne(BankBalance::class)->latestOfMany('balance_date');
+    }
+
+    public static function getTotalUsdBalance(): float
+    {
+        return static::query()
+            ->where('is_active', true)
+            ->whereHas('currency', fn($q) => $q->where('code', 'USD'))
+            ->withAggregate('latestBalance', 'balance_usd')
+            ->whereBelongsTo(Filament::getTenant())
+            ->get()
+            ->sum('latest_balance_balance_usd') ?? 0;
     }
 
     public static function getAvailableBanksForSelect()

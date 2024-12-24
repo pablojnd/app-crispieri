@@ -12,26 +12,29 @@ class BankBalance extends Model
     use HasFactory, HasStoreTenancy, SoftDeletes;
 
     protected $fillable = [
+        'store_id',
+        'bank_id',
         'balance_date',
-        'exchange_rate',
-        'balance',
         'balance_usd',
         'balance_clp',
-        'bank_id',
-        'store_id',
+        'exchange_rate',
+        'notes'
     ];
 
     protected $casts = [
-        'balance' => 'decimal:2',
+        'balance_date' => 'date',
+        'balance_usd' => 'decimal:2',
+        'balance_clp' => 'decimal:2',
+        'exchange_rate' => 'decimal:4'
     ];
-
-    public function store()
-    {
-        return $this->belongsTo(Store::class);
-    }
 
     public function bank()
     {
         return $this->belongsTo(Bank::class);
+    }
+
+    public function store()
+    {
+        return $this->belongsTo(Store::class);
     }
 }

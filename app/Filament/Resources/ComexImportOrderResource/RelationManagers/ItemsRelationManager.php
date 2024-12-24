@@ -177,21 +177,30 @@ class ItemsRelationManager extends RelationManager
                                         $set('slug', Str::slug($state));
                                     }),
                                 Forms\Components\TextInput::make('slug')
-                                    ->label('URL Amigable')
-                                    ->required(),
+                                    ->label('URL Amigable'),
                                 Forms\Components\Select::make('category_id')
                                     ->relationship('category', 'name')
                                     ->label('Categoría')
+                                    ->createOptionForm([
+                                        Forms\Components\TextInput::make('name')
+                                            ->label('Nombre de la Categoría')
+                                            ->required(),
+                                    ])
                                     ->required(),
                                 Forms\Components\Select::make('brand_id')
                                     ->relationship('brand', 'name')
-                                    ->label('Marca'),
+                                    ->label('Marca')
+                                    ->createOptionForm([
+                                        Forms\Components\TextInput::make('name')
+                                            ->label('Nombre de la Marca')
+                                            ->required(),
+                                    ]),
                                 Forms\Components\Select::make('measurement_unit_id')
                                     ->relationship('measurementUnit', 'name')
                                     ->label('Unidad de Medida')
-                                    // ->createOptionForm(function () {
-                                    //     return static::getMeasurementUnitsFormSchema();
-                                    // })
+                                    ->createOptionForm(function () {
+                                        return static::getMeasurementUnitsFormSchema();
+                                    })
                                     ->required(),
                                 Forms\Components\TextInput::make('hs_code')
                                     ->label('Código HS')
@@ -297,6 +306,32 @@ class ItemsRelationManager extends RelationManager
                 ->persistTab()
                 ->id('product-tabs')
                 ->columnSpanFull()
+        ];
+    }
+
+    public function getMeasurementUnitsFormSchema(): array
+    {
+        return [
+            Forms\Components\Grid::make(2)->schema([
+                Forms\Components\TextInput::make('name')
+                    ->label('Nombre')
+                    ->required(),
+                Forms\Components\TextInput::make('abbreviation')
+                    ->label('Abreviatura')
+                    ->required(),
+                Forms\Components\TextInput::make('description')
+                    ->label('Descripción'),
+                Forms\Components\Toggle::make('is_base_unit')
+                    ->label('Es Unidad Base')
+                    ->default(false),
+                Forms\Components\TextInput::make('conversion_factor')
+                    ->label('Factor de Conversión')
+                    ->numeric()
+                    ->visible(
+                        fn(Get $get) =>
+                        $get('is_base_unit') === false
+                    ),
+            ]),
         ];
     }
 }

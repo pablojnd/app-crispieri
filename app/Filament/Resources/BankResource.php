@@ -70,11 +70,10 @@ class BankResource extends Resource
                                 'other' => 'Otro'
                             ])
                             ->required(),
-                        Forms\Components\TextInput::make('currency')
+                        Forms\Components\Select::make('currency_id')
                             ->label('Moneda')
-                            ->required()
-                            ->maxLength(3)
-                            ->default('USD'),
+                            ->relationship('currency', 'code')
+                            ->required(),
                     ]),
             ]);
     }

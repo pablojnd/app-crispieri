@@ -47,6 +47,9 @@ class ComexImportOrderResource extends Resource
                                 ->maxLength(255)
                                 ->helperText('Referencia proporcionada por el proveedor'),
 
+                            Forms\Components\TextInput::make('sve_registration_number')
+                                ->label('Número SVE'),
+
                             Forms\Components\Select::make('provider_id')
                                 ->label('Proveedor')
                                 ->relationship(
@@ -65,17 +68,14 @@ class ComexImportOrderResource extends Resource
                                 ->label('País de Origen')
                                 ->relationship(
                                     name: 'originCountry',
-                                    titleAttribute: 'name'
+                                    titleAttribute: 'country_name'
                                 )
-                                ->searchable(['name', 'code_iso_3'])
+                                ->searchable(['country_name'])
                                 ->preload()
                                 ->required()
                                 ->createOptionForm(function () {
                                     return static::getCountryFormSchema();
                                 }),
-
-                            Forms\Components\TextInput::make('sve_registration_number')
-                                ->label('Número SVE'),
 
                             Forms\Components\Select::make('type')
                                 ->label('Tipo de Transporte')
@@ -310,13 +310,11 @@ class ComexImportOrderResource extends Resource
                     ->default(true)
                     ->helperText('Determina si el país está disponible para su uso'),
 
-                Forms\Components\TextInput::make('name')
-                    ->label('Nombre del País')
-                    ->required()
-                    ->unique(ignoreRecord: true)
-                    ->placeholder('Ej: Chile')
+                Forms\Components\TextInput::make('country_name')
+                    ->label('Nombre de Moneda')
+                    ->placeholder('Ej: Peso Chileno')
                     ->maxLength(255)
-                    ->helperText('Nombre oficial del país'),
+                    ->helperText('Nombre oficial de la moneda'),
 
                 Forms\Components\TextInput::make('region')
                     ->label('Región')
@@ -324,38 +322,11 @@ class ComexImportOrderResource extends Resource
                     ->maxLength(255)
                     ->helperText('Región geográfica del país'),
 
-                Forms\Components\TextInput::make('code_iso_2')
-                    ->label('Código ISO-2')
-                    ->maxLength(2)
-                    ->unique(ignoreRecord: true)
-                    ->placeholder('Ej: CL')
-                    ->helperText('Código ISO 3166-1 alpha-2'),
-
-                Forms\Components\TextInput::make('code_iso_3')
-                    ->label('Código ISO-3')
-                    ->maxLength(3)
-                    ->unique(ignoreRecord: true)
-                    ->placeholder('Ej: CHL')
-                    ->helperText('Código ISO 3166-1 alpha-3'),
-
-                Forms\Components\TextInput::make('currency_code')
+                Forms\Components\Select::make('currency_id')
                     ->label('Código de Moneda')
+                    ->relationship('currency', 'name')
                     ->placeholder('Ej: CLP')
-                    ->maxLength(255)
-                    ->helperText('Código ISO 4217 de la moneda'),
-
-                Forms\Components\TextInput::make('currency_name')
-                    ->label('Nombre de Moneda')
-                    ->placeholder('Ej: Peso Chileno')
-                    ->maxLength(255)
-                    ->helperText('Nombre oficial de la moneda'),
-
-                Forms\Components\TextInput::make('phone_prefix')
-                    ->label('Prefijo Telefónico')
-                    ->placeholder('Ej: +56')
-                    ->maxLength(255)
-                    ->helperText('Código de marcación internacional'),
-
+                    ->helperText('Código de la moneda'),
             ])
         ];
     }

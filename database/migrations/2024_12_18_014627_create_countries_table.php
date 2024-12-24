@@ -13,18 +13,14 @@ return new class extends Migration
     {
         Schema::create('countries', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
-            $table->string('code_iso_2')->unique()->nullable();
-            $table->string('code_iso_3')->unique()->nullable();
+            $table->string('country_name')->unique();
+            $table->string('currency_id')->nullable()->constraint('currencies')->cascadaOnDelete();
             $table->string('region')->nullable();
-            $table->string('currency_code')->nullable();
-            $table->string('currency_name')->nullable();
-            $table->string('phone_prefix')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index('name');
+            $table->index('country_name');
         });
     }
 

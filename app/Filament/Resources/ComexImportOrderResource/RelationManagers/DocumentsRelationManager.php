@@ -102,6 +102,7 @@ class DocumentsRelationManager extends RelationManager
                         Tabs\Tab::make('Pagos')
                             ->schema([
                                 Forms\Components\Repeater::make('payments')
+                                    ->label('')
                                     ->relationship()
                                     ->schema([
                                         Forms\Components\Grid::make(3)
@@ -262,7 +263,6 @@ class DocumentsRelationManager extends RelationManager
                     ->sortable()
                     ->summarize(
                         Tables\Columns\Summarizers\Sum::make()
-                            ->money('USD')
                     )
                     ->label('Pagado'),
 
@@ -271,7 +271,6 @@ class DocumentsRelationManager extends RelationManager
                     ->sortable()
                     ->summarize(
                         Tables\Columns\Summarizers\Sum::make()
-                            ->money('USD')
                     )
                     ->color(fn($record) => $record->pending_amount > 0 ? 'danger' : 'success')
                     ->label('Pendiente'),

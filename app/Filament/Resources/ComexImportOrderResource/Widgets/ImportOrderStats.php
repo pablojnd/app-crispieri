@@ -12,43 +12,75 @@ class ImportOrderStats extends BaseWidget
 {
     protected static ?string $pollingInterval = '50s';
 
+    private const CHART_POINTS = 6;
+    private const CURRENCY_FORMAT = 2;
+    private const CHART_DATA = [7, 3, 4, 5, 6];
+
     protected function getStats(): array
     {
-        $tenant = Filament::getTenant();
-
-        $totalOrders = ComexImportOrder::whereBelongsTo($tenant)->count();
-
-        $totalExpenses = ComexImportOrder::whereBelongsTo($tenant)
-            ->withSum('expenses', 'expense_amount')
-            ->get()
-            ->sum('expenses_sum_expense_amount');
-
-        $bankBalance = Bank::whereBelongsTo($tenant)
-            ->whereHas('currency', fn($query) => $query->where('code', 'USD'))
-            ->with('latestBalance')
-            ->get()
-            ->sum(function ($bank) {
-                return $bank->latestBalance?->balance ?? 0;
-            });
-
         return [
-            Stat::make('Total Órdenes', $totalOrders)
-                ->description('Órdenes de importación activas')
-                ->descriptionIcon('heroicon-m-truck')
-                ->chart([7, 3, 4, 5, 6, $totalOrders])
-                ->color('primary'),
-
-            Stat::make('Balance en Banco', number_format($bankBalance, 2))
-                ->description('USD disponibles')
-                ->descriptionIcon('heroicon-m-building-library')
-                ->chart([4, 8, 3, 5, 6, $bankBalance])
-                ->color('success'),
-
-            Stat::make('Total Gastos', number_format($totalExpenses, 2))
-                ->description('USD en gastos')
-                ->descriptionIcon('heroicon-m-banknotes')
-                ->chart([3, 5, 7, 4, 5, $totalExpenses])
-                ->color('danger'),
+            $this->getOrdersStat(),
+            $this->getBankBalanceStat(),
+            $this->getExpensesStat(),
         ];
+    }
+
+    private function getOrdersStat(): Stat
+    {
+        $totalOrders = ComexImportOrder::getActiveOrdersCount();
+
+        return Stat::make(
+            label: 'Total Órdenes',
+            value: $totalOrders
+        )
+            ->description('Órdenes de importación activas')
+            ->descriptionIcon('heroicon-m-truck')
+            ->chart($this->generateChartData($totalOrders))
+            ->color('primary');
+    }
+
+    private function getBankBalanceStat(): Stat
+    {
+        $balance = Bank::getTotalUsdBalance();
+
+        return Stat::make(
+            label: 'Balance en Banco',
+            value: '$' . $this->formatCurrency($balance)
+        )
+            ->description('USD disponibles')
+            ->descriptionIcon('heroicon-m-building-library')
+            ->chart($this->generateChartData($balance))
+            ->color($this->getBalanceColor($balance));
+    }
+
+    private function getExpensesStat(): Stat
+    {
+        $expenses = ComexImportOrder::getTotalExpenses();
+
+        return Stat::make(
+            label: 'Total Gastos',
+            value: '$' . $this->formatCurrency($expenses)
+        )
+            ->description('USD en gastos')
+            ->descriptionIcon('heroicon-m-banknotes')
+            ->chart($this->generateChartData($expenses))
+            ->color('danger');
+    }
+
+    private function formatCurrency(float $amount): string
+    {
+        return number_format($amount, self::CURRENCY_FORMAT, '.', ',');
+    }
+
+    private function generateChartData($finalValue): array
+    {
+        return array_merge(self::CHART_DATA, [$finalValue]);
+    }
+
+    private function getBalanceColor(float $balance): string
+    {
+        if ($balance <= 0) return 'danger';
+        if ($balance < 1000) return 'warning';
+        return 'success';
     }
 }

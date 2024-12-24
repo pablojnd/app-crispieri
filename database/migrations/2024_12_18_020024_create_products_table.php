@@ -17,7 +17,7 @@ return new class extends Migration
                 ->constrained('stores')
                 ->cascadeOnDelete();
             $table->string('name');
-            $table->string('slug')->unique();
+            $table->string('slug')->nullable()->unique();
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
@@ -36,7 +36,7 @@ return new class extends Migration
                 ->constrained('categories')
                 ->nullOnDelete();
             $table->string('name');
-            $table->string('slug');
+            $table->string('slug')->nullable();
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
@@ -59,7 +59,7 @@ return new class extends Migration
 
             // Campos originales
             $table->string('product_name');
-            $table->string('slug')->unique();
+            $table->string('slug')->nullable()->unique();
             $table->integer('price')->default(0);
             $table->decimal('stock', 10, 2)->default(0);
             $table->string('sku')->unique();
@@ -105,6 +105,22 @@ return new class extends Migration
             $table->index(['store_id', 'brand_id']);
             $table->index(['store_id', 'status']);
         });
+
+        // Schema::create('attributes', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->string('attribute_name');
+        // });
+
+        // Schema::create('attribute_values', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->string('value_name');
+        // });
+        // Schema::create('product_attribute_values', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+        //     $table->foreignId('attribute_id')->constrained()->cascadeOnDelete();
+        //     $table->foreignId('attribute_value_id')->constrained()->cascadeOnDelete();
+        // });
     }
 
     /**
@@ -112,6 +128,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Eliminar en orden inverso para respetar las restricciones de clave foránea
+        // Schema::dropIfExists('product_attribute_values');
+        // Schema::dropIfExists('attribute_values');
+        // Schema::dropIfExists('attributes');
         Schema::dropIfExists('products');
         Schema::dropIfExists('categories');
         Schema::dropIfExists('brands');

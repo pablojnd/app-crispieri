@@ -9,7 +9,9 @@ use App\Models\Concerns\HasStoreTenancy;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Product extends Model
 {
@@ -70,17 +72,17 @@ class Product extends Model
             ->refreshOnUpdate(false);
     }
 
-    public function category()
+    public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
-    public function brand()
+    public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
     }
 
-    public function measurementUnit()
+    public function measurementUnit(): BelongsTo
     {
         return $this->belongsTo(MeasurementUnit::class);
     }
@@ -91,4 +93,16 @@ class Product extends Model
             set: fn(string $value) => strtoupper($value),
         );
     }
+
+    // public function attributes(): BelongsToMany
+    // {
+    //     return $this->belongsToMany(ProductAttribute::class, 'product_attribute_value_product', 'product_id', 'attribute_id')
+    //         ->withPivot('value_id')
+    //         ->using(ProductAttributeValuePivot::class);
+    // }
+
+    // public function attributeValues()
+    // {
+    //     return $this->belongsToMany(ProductAttributeValue::class, 'product_attribute_value_product', 'product_id', 'value_id');
+    // }
 }

@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use App\Enums\TransportType;
+use Filament\Facades\Filament;
 use App\Enums\ImportOrderStatus;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Concerns\HasStoreTenancy;
+use Illuminate\Database\Eloquent\Builder;
 use App\Models\{Store, Provider, Country};
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -83,5 +85,38 @@ class ComexImportOrder extends Model
     protected static function newFactory()
     {
         return \Database\Factories\ComexImportOrderFactory::new();
+    }
+
+    // protected static function booted(): void
+    // {
+    //     static::addGlobalScope('store', function (Builder $query) {
+    //         if (auth()->hasUser()) {
+    //             $query->where('store_id', auth()->user()->store_id);
+    //         }
+    //     });
+    // }
+
+    public static function getActiveOrdersCount()
+    {
+        return self::query()
+            ->whereNotIn('status', [
+                ImportOrderStatus::CANCELLED,
+                ImportOrderStatus::RECEIVED
+            ])
+            ->where('store_id', Filament::getTenant()->id)
+            ->count();
+    }
+
+    public static function getTotalExpenses()
+    {
+        return self::query()
+            ->where('store_id', Filament::getTenant()->id)
+            ->whereNotIn('status', [
+                ImportOrderStatus::CANCELLED,
+                ImportOrderStatus::RECEIVED
+            ])
+            ->withSum('expenses', 'expense_amount')
+            ->get()
+            ->sum('expenses_sum_expense_amount') ?? 0;
     }
 }

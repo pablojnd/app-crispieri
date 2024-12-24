@@ -17,13 +17,13 @@ class StoreResource extends Resource
 {
     protected static ?string $model = Store::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
+    protected static ?string $navigationIcon = 'heroicon-o-building-office-2';
 
     protected static ?string $tenantOwnershipRelationshipName = 'users';
 
     protected static ?string $modelLabel = 'Tienda';
     protected static ?string $pluralModelLabel = 'Tiendas';
-    protected static ?string $navigationGroup = 'Configuración';
+    protected static ?string $navigationGroup = 'Administración';
 
     protected static bool $isScopedToTenant = false;
 
