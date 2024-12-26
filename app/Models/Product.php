@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
@@ -87,22 +88,23 @@ class Product extends Model
         return $this->belongsTo(MeasurementUnit::class);
     }
 
+    public function attributeValues(): BelongsToMany
+    {
+        return $this->belongsToMany(AttributeValue::class, 'product_attribute_values')
+            ->using(ProductAttributeValue::class)
+            ->withTimestamps();
+    }
+
+    // Nueva relación para el repeater
+    public function product_attribute_values(): HasMany
+    {
+        return $this->hasMany(ProductAttributeValue::class);
+    }
+
     protected function productName(): Attribute
     {
         return Attribute::make(
             set: fn(string $value) => strtoupper($value),
         );
     }
-
-    // public function attributes(): BelongsToMany
-    // {
-    //     return $this->belongsToMany(ProductAttribute::class, 'product_attribute_value_product', 'product_id', 'attribute_id')
-    //         ->withPivot('value_id')
-    //         ->using(ProductAttributeValuePivot::class);
-    // }
-
-    // public function attributeValues()
-    // {
-    //     return $this->belongsToMany(ProductAttributeValue::class, 'product_attribute_value_product', 'product_id', 'value_id');
-    // }
 }

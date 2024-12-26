@@ -106,21 +106,32 @@ return new class extends Migration
             $table->index(['store_id', 'status']);
         });
 
-        // Schema::create('attributes', function (Blueprint $table) {
-        //     $table->id();
-        //     $table->string('attribute_name');
-        // });
+        Schema::create('attributes', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('store_id')
+                ->constrained('stores')
+                ->cascadeOnDelete();
+            $table->string('name');
+        });
 
-        // Schema::create('attribute_values', function (Blueprint $table) {
-        //     $table->id();
-        //     $table->string('value_name');
-        // });
-        // Schema::create('product_attribute_values', function (Blueprint $table) {
-        //     $table->id();
-        //     $table->foreignId('product_id')->constrained()->cascadeOnDelete();
-        //     $table->foreignId('attribute_id')->constrained()->cascadeOnDelete();
-        //     $table->foreignId('attribute_value_id')->constrained()->cascadeOnDelete();
-        // });
+        Schema::create('attribute_values', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('attribute_id')
+                ->constrained()
+                ->cascadeOnDelete();
+            $table->string('value');
+        });
+
+        Schema::create('product_attribute_values', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('product_id')
+                ->constrained()
+                ->cascadeOnDelete();
+            $table->foreignId('attribute_value_id')
+                ->constrained()
+                ->cascadeOnDelete();
+            $table->timestamps();
+        });
     }
 
     /**
@@ -129,9 +140,9 @@ return new class extends Migration
     public function down(): void
     {
         // Eliminar en orden inverso para respetar las restricciones de clave foránea
-        // Schema::dropIfExists('product_attribute_values');
-        // Schema::dropIfExists('attribute_values');
-        // Schema::dropIfExists('attributes');
+        Schema::dropIfExists('product_attribute_values');
+        Schema::dropIfExists('attribute_values');
+        Schema::dropIfExists('attributes');
         Schema::dropIfExists('products');
         Schema::dropIfExists('categories');
         Schema::dropIfExists('brands');

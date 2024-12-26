@@ -4,19 +4,24 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class AttributeValue extends Model
 {
-    protected $fillable = ['value_name', 'attribute_id'];
+    protected $fillable = [
+        'attribute_id',
+        'value'
+    ];
+
     public $timestamps = false;
 
-    // public function attribute()
-    // {
-    //     return $this->belongsTo(ProductAttribute::class, 'attribute_id');
-    // }
-
-    public function products()
+    public function attribute(): BelongsTo
     {
-        return $this->belongsToMany(Product::class, 'product_attribute_value', 'value_id', 'product_id');
+        return $this->belongsTo(Attribute::class);
+    }
+
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'product_attribute_values');
     }
 }

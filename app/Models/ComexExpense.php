@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ExpenseType;
+use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Concerns\HasStoreTenancy;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -22,11 +23,13 @@ class ComexExpense extends Model
         'expense_type',
         'expense_quantity',
         'expense_amount',
+        'payment_status',
         'notes'
     ];
 
     protected $casts = [
         'expense_type' => ExpenseType::class,
+        'payment_status' => PaymentStatus::class,
         'expense_date' => 'date',
         'expense_quantity' => 'decimal:2',
         'expense_amount' => 'decimal:4'

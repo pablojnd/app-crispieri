@@ -214,7 +214,7 @@ return new class extends Migration
             ])->comment('Tipo de gasto');
             $table->decimal('expense_quantity', 8, 2)->nullable()->comment('Cantidad del gasto');
             $table->decimal('expense_amount', 15, 4)->default(0)->comment('Monto del gasto');
-            $table->boolean('pay_status')->default(false)->comment('Estado del gasto');
+            $table->string('payment_status', 50)->default('pending')->comment('Estado del pago');
             $table->text('notes')->nullable()->comment('Notas adicionales');
             $table->timestamps();
             $table->softDeletes();

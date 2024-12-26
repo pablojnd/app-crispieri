@@ -33,7 +33,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('store_id')->constrained('stores')->comment('Referencia a la tienda/multitenancy');
             $table->foreignId('bank_code_id')->constrained('bank_codes')->comment('Referencia al código del banco');
-            $table->foreignId('currency_id')->constrained('currencies')->comment('Moneda de la cuenta');
+            $table->foreignId('currency_id')->nullable()->constrained('currencies')->comment('Moneda de la cuenta');
             $table->string('account_number')->comment('Número de cuenta bancaria');
             $table->enum('account_type', ['checking', 'savings', 'other'])->default('checking')->comment('Tipo de cuenta');
             $table->boolean('is_active')->default(true)->comment('Estado activo del banco');

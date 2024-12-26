@@ -2,12 +2,13 @@
 
 namespace App\Filament\Resources\ComexImportOrderResource\RelationManagers;
 
-use App\Enums\ExpenseType;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Currency;
 use Filament\Forms\Form;
+use App\Enums\ExpenseType;
 use Filament\Tables\Table;
+use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Resources\RelationManagers\RelationManager;
 
@@ -55,8 +56,12 @@ class ExpensesRelationManager extends RelationManager
                     ->numeric()
                     ->required()
                     ->default(0)
-                    ->prefix('$')
                     ->label('Monto'),
+
+                Forms\Components\Select::make('payment_status')
+                    ->options(PaymentStatus::class)
+                    ->default(PaymentStatus::PENDING)
+                    ->label('Estado de Pago'),
             ]),
 
             Forms\Components\Textarea::make('notes')
