@@ -23,10 +23,6 @@ class ComexImportOrderFactory extends Factory
             'type' => fake()->randomElement(['air', 'sea', 'land']),
             'status' => fake()->randomElement(['draft', 'confirmed', 'in_transit', 'in_customs', 'in_zofri', 'received', 'cancelled']),
             'order_date' => $orderDate,
-            'estimated_departure' => fake()->dateTimeBetween($orderDate, '+2 months'),
-            'actual_departure' => fake()->optional(0.7)->dateTimeBetween($orderDate, '+2 months'),
-            'estimated_arrival' => fake()->dateTimeBetween($orderDate, '+3 months'),
-            'actual_arrival' => fake()->optional(0.5)->dateTimeBetween($orderDate, '+3 months'),
         ];
     }
 }

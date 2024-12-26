@@ -32,36 +32,74 @@ class ContainersRelationManager extends RelationManager
     public function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\TextInput::make('container_number')
-                ->required()
-                ->unique(ignoreRecord: true)
-                ->maxLength(255)
-                ->label('Número de Contenedor'),
+            Forms\Components\Tabs::make('Tabs')
+                ->tabs([
+                    Forms\Components\Tabs\Tab::make('Naviera')
+                        ->schema([
+                            Forms\Components\Group::make()
+                                ->relationship(
+                                    'shippingLine',
+                                    condition: fn(?array $state): bool => filled($state['name']),
+                                )
+                                ->schema([
+                                    Forms\Components\TextInput::make('name')
+                                        ->label('Nombre de la Naviera')
+                                        ->required(),
 
-            Forms\Components\Select::make('type')
-                ->options(ContainerType::class)
-                ->required()
-                ->label('Tipo'),
+                                    Forms\Components\TextInput::make('contact_person')
+                                        ->label('Persona de Contacto'),
 
-            Forms\Components\TextInput::make('weight')
-                ->numeric()
-                ->required()
-                ->label('Peso (KG)'),
+                                    Forms\Components\TextInput::make('phone')
+                                        ->label('Teléfono')
+                                        ->tel(),
 
-            Forms\Components\TextInput::make('seal_number')
-                ->maxLength(255)
-                ->label('Número de Sello'),
+                                    Forms\Components\TextInput::make('email')
+                                        ->label('Email')
+                                        ->email(),
 
-            Forms\Components\TextInput::make('cost')
-                ->numeric()
-                ->required()
-                ->label('Costo'),
+                                    Forms\Components\Select::make('status')
+                                        ->options([
+                                            'active' => 'Activo',
+                                            'inactive' => 'Inactivo',
+                                        ])
+                                        ->default('active')
+                                        ->required(),
 
-            Forms\Components\Textarea::make('notes')
-                ->maxLength(500)
-                ->columnSpanFull()
-                ->label('Notas'),
-        ])->columns(2);
+                                    Forms\Components\Textarea::make('notes')
+                                        ->label('Notas')
+                                        ->columnSpanFull(),
+                                ])->columns(2),
+                        ]),
+                    Forms\Components\Tabs\Tab::make('Contenedores')
+                        ->schema([
+                            Forms\Components\TextInput::make('container_number')
+                                ->required()
+                                ->unique(ignoreRecord: true)
+                                ->maxLength(255)
+                                ->label('Número de Contenedor'),
+
+                            Forms\Components\Select::make('type')
+                                ->options(ContainerType::class)
+                                ->required()
+                                ->label('Tipo'),
+
+                            Forms\Components\TextInput::make('weight')
+                                ->numeric()
+                                ->required()
+                                ->label('Peso (KG)'),
+
+                            Forms\Components\TextInput::make('cost')
+                                ->numeric()
+                                ->required()
+                                ->label('Costo'),
+
+                            Forms\Components\Textarea::make('notes')
+                                ->maxLength(500)
+                                ->columnSpanFull()
+                                ->label('Notas'),
+                        ])->columns(2),
+                ])->columnSpanFull()
+        ]);
     }
 
     public function table(Table $table): Table
@@ -77,6 +115,26 @@ class ContainersRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('type')
                     ->badge()
                     ->label('Tipo'),
+
+                Tables\Columns\TextColumn::make('shippingLine.name')
+                    ->searchable()
+                    ->sortable()
+                    ->label('Naviera'),
+
+                Tables\Columns\TextColumn::make('shippingLine.contact_person')
+                    ->searchable()
+                    ->toggleable()
+                    ->label('Contacto'),
+
+                Tables\Columns\TextColumn::make('shippingLine.estimated_departure')
+                    ->date()
+                    ->toggleable()
+                    ->label('Fecha Est. Salida'),
+
+                Tables\Columns\TextColumn::make('shippingLine.estimated_arrival')
+                    ->date()
+                    ->toggleable()
+                    ->label('Fecha Est. Llegada'),
 
                 Tables\Columns\TextColumn::make('weight')
                     ->numeric(
@@ -101,6 +159,7 @@ class ContainersRelationManager extends RelationManager
                     ->counts('documents')
                     ->label('Documentos'),
             ])
+            ->defaultSort('container_number', 'asc')
             ->filters([
                 //
             ])

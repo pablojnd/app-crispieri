@@ -34,10 +34,6 @@ return new class extends Migration
                 ->default('draft')
                 ->comment('Estado de la orden');
             $table->date('order_date')->comment('Fecha de creación de la orden');
-            $table->date('estimated_departure')->nullable()->comment('Fecha estimada de salida');
-            $table->date('actual_departure')->nullable()->comment('Fecha real de salida');
-            $table->date('estimated_arrival')->nullable()->comment('Fecha estimada de llegada');
-            $table->date('actual_arrival')->nullable()->comment('Fecha real de llegada');
             $table->timestamps();
             $table->softDeletes();
 
@@ -113,6 +109,26 @@ return new class extends Migration
             $table->index(['document_id', 'payment_status']);
         });
 
+        // Tabla para navieras
+        Schema::create('comex_shipping_lines', function (Blueprint $table) {
+            $table->id('id');
+            $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete();
+            $table->string('name')->comment('Nombre de la naviera');
+            $table->string('contact_person')->nullable()->comment('Persona de contacto');
+            $table->string('phone')->nullable()->comment('Teléfono de contacto');
+            $table->string('email')->nullable()->comment('Email de contacto');
+            $table->string('status')->default('active')->comment('Estado de la naviera');
+            $table->date('estimated_departure')->nullable()->comment('Fecha estimada de salida');
+            $table->date('actual_departure')->nullable()->comment('Fecha real de salida');
+            $table->date('estimated_arrival')->nullable()->comment('Fecha estimada de llegada');
+            $table->date('actual_arrival')->nullable()->comment('Fecha real de llegada');
+            $table->text('notes')->nullable()->comment('Notas adicionales');
+            $table->timestamps();
+
+            $table->index('store_id');
+            $table->index('status');
+        });
+
         // Tabla comex_containers (contenedores de importación)
         Schema::create('comex_containers', function (Blueprint $table) {
             $table->id('id');
@@ -128,9 +144,12 @@ return new class extends Migration
             $table->enum('type', ['20GP', '40GP', '40HC', 'LCL', 'REEFER', 'OPEN_TOP'])
                 ->comment('Tipo de contenedor');
             $table->decimal('weight', 10, 2)->default(0.00)->comment('Peso total del contenedor en KG');
-            $table->string('seal_number')->nullable()->comment('Número de sello del contenedor');
             $table->decimal('cost', 15, 2)->default(0.00)->comment('Costo del contenedor');
             $table->text('notes')->nullable()->comment('Notas adicionales');
+            $table->foreignId('shipping_line_id')
+                ->nullable()
+                ->constrained('comex_shipping_lines')
+                ->nullOnDelete();
             $table->timestamps();
             $table->softDeletes();
 
@@ -152,6 +171,7 @@ return new class extends Migration
             $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete()->comment('Tienda asociada al ítem');
             $table->foreignId('import_order_id')->constrained('comex_import_orders')->cascadeOnDelete()->comment('Orden de importación asociada');
             $table->foreignId('product_id')->nullable()->constrained('products')->nullOnDelete()->comment('Producto asociado al ítem de importación');
+            $table->string('package_quality')->default(1)->comment('Calidad de bultos');
             $table->decimal('quantity', 12, 2)->default(1)->comment('Cantidad del ítem');
             $table->decimal('total_price', 15, 4)->default(0)->comment('Precio total del ítem');
             $table->decimal('unit_price', 15, 4)->storedAs('CASE WHEN quantity = 0 THEN 0 ELSE total_price / quantity END')->comment('Precio unitario calculado');
@@ -236,6 +256,7 @@ return new class extends Migration
         Schema::dropIfExists('comex_items');
         Schema::dropIfExists('comex_document_containers');
         Schema::dropIfExists('comex_containers');
+        Schema::dropIfExists('comex_shipping_lines');
         Schema::dropIfExists('comex_document_payments');
         Schema::dropIfExists('comex_documents');
         Schema::dropIfExists('comex_import_orders');

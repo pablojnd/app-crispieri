@@ -19,7 +19,8 @@ class ComexItem extends Model
         'product_id',
         'quantity',
         'total_price',
-        'cif_unit'
+        'cif_unit',
+        'package_quality'
     ];
 
     protected $casts = [

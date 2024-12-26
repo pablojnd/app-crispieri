@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
             BrandCategoryProductSeeder::class,
             Comex\ComexImportOrderSeeder::class,
             Comex\ComexItemSeeder::class,        // Mover ItemSeeder antes de Container y Document
+            ComexShippingLineSeeder::class,
             Comex\ComexContainerSeeder::class,
             Comex\ComexDocumentSeeder::class,
             Comex\ComexDocumentPaymentSeeder::class,

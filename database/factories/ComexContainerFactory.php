@@ -17,7 +17,6 @@ class ComexContainerFactory extends Factory
             'container_number' => fake()->unique()->bothify('CONT#####??'),
             'type' => fake()->randomElement(['20GP', '40GP', '40HC', 'LCL', 'REEFER', 'OPEN_TOP']),
             'weight' => fake()->randomFloat(2, 1000, 25000),
-            'seal_number' => fake()->boolean(80) ? fake()->bothify('SEAL####??') : null,
             'cost' => fake()->randomFloat(2, 500, 5000),
             'notes' => fake()->optional(0.7)->sentence(),
         ];

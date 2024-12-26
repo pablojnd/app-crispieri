@@ -20,9 +20,9 @@ class ComexContainer extends Model
         'container_number',
         'type',
         'weight',
-        'seal_number',
         'cost',
-        'notes'
+        'notes',
+        'shipping_line_id',
     ];
 
     protected $casts = [
@@ -68,5 +68,10 @@ class ComexContainer extends Model
         return $this->belongsToMany(ComexItem::class, 'comex_container_items', 'container_id', 'item_id')
             ->withPivot(['quantity', 'weight'])
             ->withTimestamps();
+    }
+
+    public function shippingLine()
+    {
+        return $this->belongsTo(ComexShippingLine::class, 'shipping_line_id');
     }
 }

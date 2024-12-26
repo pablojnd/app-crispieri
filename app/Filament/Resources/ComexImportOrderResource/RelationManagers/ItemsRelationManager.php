@@ -38,8 +38,6 @@ class ItemsRelationManager extends RelationManager
                         name: 'product',
                         titleAttribute: 'product_name',
                         modifyQueryUsing: fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
-                        // modifyQueryUsing: fn(Builder $query) =>
-                        // $query->whereBelongsTo($store)
                     )
                     ->searchable(['product_name', 'sku'])
                     ->preload()
@@ -48,7 +46,11 @@ class ItemsRelationManager extends RelationManager
                         return static::getProductsFormSchema();
                     })
                     ->label('Producto')
-                    ->columnSpanFull(),
+                    ->columnSpan(3),
+
+                Forms\Components\TextInput::make('package_quality')
+                    ->required()
+                    ->label('Cantidad de Bulto'),
 
                 Forms\Components\TextInput::make('quantity')
                     ->numeric()
