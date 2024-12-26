@@ -31,7 +31,7 @@ class ComexContainer extends Model
         'type' => ContainerType::class,
     ];
 
-    protected $with = ['importOrder'];
+    protected $with = ['importOrder', 'shippingLine']; // Agregar shippingLine al eager loading
 
     protected static function boot()
     {

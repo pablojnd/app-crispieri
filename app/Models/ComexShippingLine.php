@@ -11,6 +11,8 @@ class ComexShippingLine extends Model
 {
     use HasFactory, HasStoreTenancy;
 
+    protected $table = 'comex_shipping_lines';
+
     protected $fillable = [
         'store_id',
         'name',
@@ -26,14 +28,19 @@ class ComexShippingLine extends Model
     ];
 
     protected $casts = [
-        'estimated_departure' => 'datetime',
-        'actual_departure' => 'datetime',
-        'estimated_arrival' => 'datetime',
-        'actual_arrival' => 'datetime',
+        'estimated_departure' => 'date',
+        'actual_departure' => 'date',
+        'estimated_arrival' => 'date',
+        'actual_arrival' => 'date',
     ];
 
     public function store()
     {
         return $this->belongsTo(Store::class);
+    }
+
+    public function containers()
+    {
+        return $this->hasMany(ComexContainer::class, 'shipping_line_id');
     }
 }
