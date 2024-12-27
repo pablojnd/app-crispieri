@@ -35,7 +35,7 @@ class ComexImportOrder extends Model
     ];
 
     protected $casts = [
-        'type' => TransportType::class,
+        'type' => \App\Enums\TransportType::class,
         'status' => ImportOrderStatus::class,
         'order_date' => 'date',
         'estimated_departure' => 'date',
@@ -73,6 +73,12 @@ class ComexImportOrder extends Model
     {
         return $this->hasMany(ComexContainer::class, 'import_order_id');
     }
+
+    public function shippingLines()
+    {
+        return $this->hasMany(ComexShippingLine::class, 'import_order_id');
+    }
+
     public function items()
     {
         return $this->hasMany(ComexItem::class, 'import_order_id');

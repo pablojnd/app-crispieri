@@ -16,7 +16,7 @@ class ComexContainer extends Model
 
     protected $fillable = [
         'store_id',
-        'import_order_id',
+        'import_order_id', // Agregar este campo
         'container_number',
         'type',
         'weight',
@@ -32,17 +32,6 @@ class ComexContainer extends Model
     ];
 
     protected $with = ['importOrder', 'shippingLine']; // Agregar shippingLine al eager loading
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($model) {
-            if (!$model->store_id && ($store = Store::current())) {
-                $model->store_id = $store->id;
-            }
-        });
-    }
 
     public function store()
     {

@@ -18,7 +18,7 @@ class MeasurementUnitFactory extends Factory
     public function definition(): array
     {
         return [
-            'store_id' => Store::factory(),
+            // 'store_id' => Store::factory(),
             'name' => $this->faker->unique()->word(),
             'abbreviation' => $this->faker->unique()->lexify('??'),
             'description' => $this->faker->sentence(),

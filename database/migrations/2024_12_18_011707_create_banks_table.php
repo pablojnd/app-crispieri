@@ -16,7 +16,6 @@ return new class extends Migration
             $table->string('name')->comment('Nombre de la moneda');
             $table->string('code', 3)->nullable()->comment('Código ISO de la moneda');
             $table->integer('code_adu')->nullable()->comment('Código aduana de la moneda'); // Eliminar auto_increment
-            $table->string('symbol', 5)->comment('Símbolo de la moneda');
             $table->boolean('is_active')->default(true)->comment('Estado activo de la moneda');
             $table->timestamps();
         });
@@ -33,7 +32,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('store_id')->constrained('stores')->comment('Referencia a la tienda/multitenancy');
             $table->foreignId('bank_code_id')->constrained('bank_codes')->comment('Referencia al código del banco');
-            $table->foreignId('currency_id')->nullable()->constrained('currencies')->comment('Moneda de la cuenta');
             $table->string('account_number')->comment('Número de cuenta bancaria');
             $table->enum('account_type', ['checking', 'savings', 'other'])->default('checking')->comment('Tipo de cuenta');
             $table->boolean('is_active')->default(true)->comment('Estado activo del banco');
@@ -55,8 +53,6 @@ return new class extends Migration
             $table->text('notes')->nullable()->comment('Notas o comentarios');
             $table->timestamps();
             $table->softDeletes();
-
-            $table->unique(['bank_id', 'balance_date']);
         });
     }
 

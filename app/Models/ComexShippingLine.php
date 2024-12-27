@@ -15,6 +15,7 @@ class ComexShippingLine extends Model
 
     protected $fillable = [
         'store_id',
+        'import_order_id',
         'name',
         'contact_person',
         'phone',
@@ -37,6 +38,11 @@ class ComexShippingLine extends Model
     public function store()
     {
         return $this->belongsTo(Store::class);
+    }
+
+    public function importOrder()
+    {
+        return $this->belongsTo(ComexImportOrder::class, 'import_order_id');
     }
 
     public function containers()

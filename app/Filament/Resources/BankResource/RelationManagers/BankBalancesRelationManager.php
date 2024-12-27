@@ -106,6 +106,7 @@ class BankBalancesRelationManager extends RelationManager
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('balance_date', 'desc')
             ->filters([
                 //
             ])

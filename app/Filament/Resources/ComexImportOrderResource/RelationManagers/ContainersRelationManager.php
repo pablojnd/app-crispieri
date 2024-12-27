@@ -36,40 +36,36 @@ class ContainersRelationManager extends RelationManager
                 ->tabs([
                     Forms\Components\Tabs\Tab::make('Naviera')
                         ->schema([
-                            Forms\Components\Group::make()
-                                ->relationship(
-                                    'shippingLine',
-                                    condition: fn(?array $state): bool => filled($state['name']),
-                                )
-                                ->schema([
-                                    Forms\Components\TextInput::make('name')
-                                        ->label('Nombre de la Naviera')
-                                        ->required(),
+                            Forms\Components\Select::make('shippingLine_ic')
+                                ->label('Nombre')
+                                ->relationship('shippingLine', 'name')
+                                // ->createOptionForm()
+                                ->required(),
 
-                                    Forms\Components\TextInput::make('contact_person')
-                                        ->label('Persona de Contacto'),
+                            Forms\Components\DatePicker::make('estimated_departure')
+                                ->label('Salida Estimada'),
 
-                                    Forms\Components\TextInput::make('phone')
-                                        ->label('Teléfono')
-                                        ->tel(),
+                            Forms\Components\DatePicker::make('actual_departure')
+                                ->label('Salida Real'),
 
-                                    Forms\Components\TextInput::make('email')
-                                        ->label('Email')
-                                        ->email(),
+                            Forms\Components\DatePicker::make('estimated_arrival')
+                                ->label('Llegada Estimada'),
 
-                                    Forms\Components\Select::make('status')
-                                        ->options([
-                                            'active' => 'Activo',
-                                            'inactive' => 'Inactivo',
-                                        ])
-                                        ->default('active')
-                                        ->required(),
+                            Forms\Components\DatePicker::make('actual_arrival')
+                                ->label('Llegada Real'),
 
-                                    Forms\Components\Textarea::make('notes')
-                                        ->label('Notas')
-                                        ->columnSpanFull(),
-                                ])->columns(2),
-                        ]),
+                            Forms\Components\Select::make('status')
+                                ->options([
+                                    'active' => 'Activo',
+                                    'inactive' => 'Inactivo',
+                                ])
+                                ->default('active')
+                                ->required(),
+
+                            Forms\Components\Textarea::make('notes')
+                                ->label('Notas')
+                                ->columnSpanFull(),
+                        ])->columns(2),
                     Forms\Components\Tabs\Tab::make('Contenedores')
                         ->schema([
                             Forms\Components\TextInput::make('container_number')

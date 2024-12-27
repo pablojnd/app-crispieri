@@ -11,6 +11,7 @@ use App\Enums\DocumentType;
 use App\Enums\PaymentStatus;
 use App\Enums\DocumentClauseType;
 use Filament\Forms\Components\Tabs;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -109,18 +110,18 @@ class DocumentsRelationManager extends RelationManager
                                             ->schema([
                                                 Forms\Components\Select::make('bank_id')
                                                     ->label('Banco')
-                                                    ->options(function () {
-                                                        try {
-                                                            $banks = Bank::getAvailableBanksForSelect();
-                                                            return empty($banks) ? ['' => 'No hay bancos disponibles'] : $banks;
-                                                        } catch (\Exception $e) {
-                                                            return ['' => 'Error al cargar bancos'];
-                                                        }
-                                                    })
+                                                    ->relationship(
+                                                        name: 'bank',
+                                                        titleAttribute: 'account_number',
+                                                        modifyQueryUsing: fn(Builder $query) => $query->with('bankCode'),
+                                                    )
+                                                    ->getOptionLabelFromRecordUsing(
+                                                        fn(Model $record) =>
+                                                        "{$record->bankCode->bank_name} - {$record->account_number}"
+                                                    )
                                                     ->required()
-                                                    ->searchable()
-                                                    ->preload()
-                                                    ->helperText('Seleccione un banco'),
+                                                    ->searchable(['account_number', 'bankCode.bank_name'])
+                                                    ->preload(),
 
                                                 Forms\Components\TextInput::make('amount')
                                                     ->label('Monto')

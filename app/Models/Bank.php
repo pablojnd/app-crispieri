@@ -45,43 +45,24 @@ class Bank extends Model
         return $this->hasMany(BankBalance::class);
     }
 
-    // Relación con el último saldo del banco
     public function latestBalance()
     {
-        return $this->hasOne(BankBalance::class)->latestOfMany('balance_date');
+        return $this->hasOne(BankBalance::class)
+            ->orderByDesc('balance_date');
     }
 
     public static function getTotalUsdBalance(): float
     {
-        return static::query()
+        $banks = static::query()
             ->where('is_active', true)
-            ->whereHas('currency', fn($q) => $q->where('code', 'USD'))
-            ->withAggregate('latestBalance', 'balance_usd')
-            ->whereBelongsTo(Filament::getTenant())
-            ->get()
-            ->sum('latest_balance_balance_usd') ?? 0;
-    }
+            ->with(['bankBalances' => function ($query) {
+                $query->orderByDesc('balance_date')
+                    ->limit(1);
+            }])
+            ->get();
 
-    public static function getAvailableBanksForSelect()
-    {
-        return static::query()
-            ->when(
-                Filament::getTenant(),
-                fn($query) => $query->where('store_id', Filament::getTenant()->id)
-            )
-            ->get()
-            ->mapWithKeys(function ($bank) {
-                return [$bank->id => $bank->account_number];
-            })
-            ->toArray();
-        $label = sprintf(
-
-
-
-            '%s - %s',
-            $bank->bankCode->name ?? 'N/A',
-            $bank->account_number
-        );
-        return [$bank->id => $label];
+        return $banks->sum(function ($bank) {
+            return $bank->bankBalances->first()?->balance_usd ?? 0;
+        });
     }
 }

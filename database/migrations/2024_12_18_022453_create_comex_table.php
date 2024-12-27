@@ -113,6 +113,7 @@ return new class extends Migration
         Schema::create('comex_shipping_lines', function (Blueprint $table) {
             $table->id('id');
             $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete();
+            $table->foreignId('import_order_id')->constrained('comex_import_orders')->cascadeOnDelete()->comment('Orden de importación asociada al contenedor');
             $table->string('name')->comment('Nombre de la naviera');
             $table->string('contact_person')->nullable()->comment('Persona de contacto');
             $table->string('phone')->nullable()->comment('Teléfono de contacto');
@@ -132,28 +133,16 @@ return new class extends Migration
         // Tabla comex_containers (contenedores de importación)
         Schema::create('comex_containers', function (Blueprint $table) {
             $table->id('id');
-            $table->foreignId('store_id')
-                ->constrained('stores')
-                ->cascadeOnDelete()
-                ->comment('Tienda asociada al contenedor');
-            $table->foreignId('import_order_id')
-                ->constrained('comex_import_orders')
-                ->cascadeOnDelete()
-                ->comment('Orden de importación asociada al contenedor');
+            $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete()->comment('Tienda asociada al contenedor');
+            $table->foreignId('shipping_line_id')->nullable()->constrained('comex_shipping_lines')->nullOnDelete();
+            $table->foreignId('import_order_id')->nullable()->constrained('comex_import_orders')->cascadeOnDelete()->comment('Orden de importación asociada al contenedor');
             $table->string('container_number')->unique()->comment('Número del contenedor');
-            $table->enum('type', ['20GP', '40GP', '40HC', 'LCL', 'REEFER', 'OPEN_TOP'])
-                ->comment('Tipo de contenedor');
+            $table->enum('type', ['20GP', '40GP', '40HC', 'LCL', 'REEFER', 'OPEN_TOP'])->comment('Tipo de contenedor');
             $table->decimal('weight', 10, 2)->default(0.00)->comment('Peso total del contenedor en KG');
             $table->decimal('cost', 15, 2)->default(0.00)->comment('Costo del contenedor');
             $table->text('notes')->nullable()->comment('Notas adicionales');
-            $table->foreignId('shipping_line_id')
-                ->nullable()
-                ->constrained('comex_shipping_lines')
-                ->nullOnDelete();
             $table->timestamps();
             $table->softDeletes();
-
-            $table->index(['import_order_id']);
         });
 
         // Tabla pivote para la relación muchos a muchos entre documentos y contenedores

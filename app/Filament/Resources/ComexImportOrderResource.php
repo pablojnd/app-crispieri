@@ -98,18 +98,6 @@ class ComexImportOrderResource extends Resource
                         ->label('Fecha de Orden')
                         ->default(now())
                         ->required(),
-
-                    Forms\Components\DatePicker::make('estimated_departure')
-                        ->label('Salida Estimada'),
-
-                    Forms\Components\DatePicker::make('actual_departure')
-                        ->label('Salida Real'),
-
-                    Forms\Components\DatePicker::make('estimated_arrival')
-                        ->label('Llegada Estimada'),
-
-                    Forms\Components\DatePicker::make('actual_arrival')
-                        ->label('Llegada Real'),
                 ])
                 ->columns(2)
                 ->columnSpan(['lg' => 1]),
@@ -183,7 +171,7 @@ class ComexImportOrderResource extends Resource
     {
         return [
             RelationManagers\DocumentsRelationManager::class,
-            RelationManagers\ContainersRelationManager::class,
+            RelationManagers\ShippingLineRelationManager::class,
             RelationManagers\ItemsRelationManager::class,
             RelationManagers\ExpensesRelationManager::class,
         ];
@@ -311,14 +299,14 @@ class ComexImportOrderResource extends Resource
                     ->helperText('Determina si el país está disponible para su uso'),
 
                 Forms\Components\TextInput::make('country_name')
-                    ->label('Nombre de Moneda')
-                    ->placeholder('Ej: Peso Chileno')
+                    ->label('Nombre de País')
+                    ->placeholder('Ej: Chile')
                     ->maxLength(255)
                     ->helperText('Nombre oficial de la moneda'),
 
                 Forms\Components\TextInput::make('region')
                     ->label('Región')
-                    ->placeholder('Ej: Sudamérica')
+                    ->placeholder('Ej: Región Metropolitana')
                     ->maxLength(255)
                     ->helperText('Región geográfica del país'),
 
@@ -326,8 +314,28 @@ class ComexImportOrderResource extends Resource
                     ->label('Código de Moneda')
                     ->relationship('currency', 'name')
                     ->placeholder('Ej: CLP')
+                    ->createOptionForm(
+                        fn() => static::getCurrencyFormSchema()
+                    )
                     ->helperText('Código de la moneda'),
             ])
+        ];
+    }
+
+    protected static function getCurrencyFormSchema(): array
+    {
+        return [
+            Forms\Components\TextInput::make('name')
+                ->label('Nombre de Moneda')
+                ->placeholder('Ej: Peso Chileno')
+                ->maxLength(255)
+                ->helperText('Nombre oficial de la moneda'),
+
+            Forms\Components\TextInput::make('code')
+                ->label('Código de Moneda')
+                ->placeholder('Ej: CLP')
+                ->maxLength(255)
+                ->helperText('Código de la moneda'),
         ];
     }
 }

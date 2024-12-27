@@ -13,14 +13,14 @@ class Country extends Model
 
     protected $fillable = [
         'country_name',
+        'country_code',
         'currency_id',
-        'region',
         'is_active',
     ];
 
     protected $casts = [
         'country_name' => 'string',
-        'region' => 'string',
+        'country_code' => 'string',
         'is_active' => 'boolean'
     ];
 
@@ -32,5 +32,15 @@ class Country extends Model
     public function comexImportOrders(): HasMany
     {
         return $this->hasMany(ComexImportOrder::class);
+    }
+
+    public function getCountryNameAttribute($value)
+    {
+        return strtoupper($value);
+    }
+
+    public function getCountryCodeAttribute($value)
+    {
+        return strtoupper($value);
     }
 }

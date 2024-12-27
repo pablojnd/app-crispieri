@@ -10,12 +10,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class MeasurementUnit extends Model
 {
-    use HasFactory, SoftDeletes, HasStoreTenancy;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name',
+        'code',
         'abbreviation',
-        'type',
         'description',
         'is_base_unit',
         'conversion_factor'

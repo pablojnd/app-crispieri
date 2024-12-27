@@ -70,10 +70,9 @@ class BankResource extends Resource
                                 'other' => 'Otro'
                             ])
                             ->required(),
-                        // Forms\Components\Select::make('currency_id')
-                        //     ->label('Moneda')
-                        //     ->relationship('currency', 'name')
-                        //     ->required(),
+                        Forms\Components\Toggle::make('is_active')
+                            ->label('Activa')
+                            ->required(),
                     ]),
             ]);
     }
@@ -91,7 +90,17 @@ class BankResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('latestBalance.balance_usd')
                     ->label('Saldo USD')
-                    ->sortable(),
+                    ->money('USD')
+                    ->sortable()
+                    ->alignEnd()
+                    ->description(
+                        fn($record) =>
+                        $record->latestBalance?->balance_date?->format('d/m/Y H:i') ?? '-'
+                    )
+                    ->color(
+                        fn($record) =>
+                        $record->latestBalance?->balance_usd > 0 ? 'success' : 'danger'
+                    ),
                 Tables\Columns\TextColumn::make('latestBalance.balance_clp')
                     ->label('Saldo CLP')
                     ->sortable(),
@@ -114,6 +123,7 @@ class BankResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 //
             ])

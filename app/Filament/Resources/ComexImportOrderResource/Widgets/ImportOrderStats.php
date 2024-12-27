@@ -44,10 +44,10 @@ class ImportOrderStats extends BaseWidget
         $balance = Bank::getTotalUsdBalance();
 
         return Stat::make(
-            label: 'Balance en Banco',
+            label: 'Balance en Banco USD',
             value: '$' . $this->formatCurrency($balance)
         )
-            ->description('USD disponibles')
+            ->description('Último balance registrado')
             ->descriptionIcon('heroicon-m-building-library')
             ->chart($this->generateChartData($balance))
             ->color($this->getBalanceColor($balance));

@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::create('measurement_units', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('store_id')
-                ->constrained('stores')
-                ->cascadeOnDelete();
+            // $table->foreignId('store_id')
+            //     ->constrained('stores')
+            //     ->cascadeOnDelete();
             $table->string('name')->comment('Nombre de la unidad de medida');
+            $table->string('code')->comment('Código de la unidad de medida');
             $table->string('abbreviation')->comment('Abreviatura');
             $table->text('description')->nullable();
             $table->boolean('is_base_unit')->default(false);
@@ -26,8 +27,7 @@ return new class extends Migration
             $table->softDeletes();
 
             // Cambiar las restricciones únicas para incluir store_id
-            $table->unique(['store_id', 'name']);
-            $table->unique(['store_id', 'abbreviation']);
+            $table->unique(['name', 'code']);
         });
     }
 

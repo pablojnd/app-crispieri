@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('countries', function (Blueprint $table) {
             $table->id();
             $table->string('country_name')->unique();
+            $table->string('country_code')->unique();
             $table->string('currency_id')->nullable()->constraint('currencies')->cascadaOnDelete();
-            $table->string('region')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
