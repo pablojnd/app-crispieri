@@ -21,12 +21,12 @@ class BrandCategoryProductSeeder extends Seeder
         }
 
         foreach ($stores as $store) {
-            // Obtener una unidad de medida existente para la tienda
-            $measurementUnit = MeasurementUnit::where('store_id', $store->id)->first();
-
-            if (!$measurementUnit) {
-                throw new \Exception("La tienda {$store->id} no tiene unidades de medida. Ejecute MeasurementUnitSeeder primero.");
-            }
+            // $measurementUnit = [];
+            // for ($i = 0; $i < 5; $i++) {
+            //     $measurementUnit[] = MeasurementUnit::factory()->create([
+            //         'store_id' => $store->id
+            //     ]);
+            // }
 
             // Crear marcas para la tienda
             $brands = [];
@@ -61,7 +61,7 @@ class BrandCategoryProductSeeder extends Seeder
                         'store_id' => $store->id,
                         'brand_id' => $brand->id,
                         'category_id' => $mainCategories[array_rand($mainCategories)]->id,
-                        'measurement_unit_id' => $measurementUnit->id
+                        // 'measurement_unit_id' => $measurementUnit[array_rand($measurementUnit)]->id
                     ]);
                 }
             }

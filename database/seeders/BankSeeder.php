@@ -34,7 +34,7 @@ class BankSeeder extends Seeder
                 Bank::create([
                     'store_id' => $store->id,
                     'bank_code_id' => $bankCode->id,
-                    'currency_id' => $currencies->random()->id,
+                    // 'currency_id' => $currencies->random()->id,
                     'account_number' => fake()->unique()->numerify($bankCode->code . '#####'),
                     'account_type' => fake()->randomElement(['checking', 'savings']),
                     'is_active' => true,

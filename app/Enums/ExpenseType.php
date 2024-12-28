@@ -74,4 +74,22 @@ enum ExpenseType: string implements HasLabel, HasColor, HasIcon
             self::OTHER => 'heroicon-o-document',
         };
     }
+
+    public function ordinal(): int
+    {
+        return match ($this) {
+            self::GATE_IN => 0,
+            self::THC => 1,
+            self::MANIFEST_OPENING => 2,
+            self::GUARANTEE => 3,
+            self::LIABILITY_LETTER => 4,
+            self::BL_ISSUANCE => 5,
+            self::DEMURRAGE => 6,
+            self::CONTAINER_MOVEMENT => 7,
+            self::CRANES => 8,
+            self::UNLOADING => 9,
+            self::FREIGHT => 10,
+            self::OTHER => 11,
+        };
+    }
 }

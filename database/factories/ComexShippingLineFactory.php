@@ -14,6 +14,7 @@ class ComexShippingLineFactory extends Factory
     {
         return [
             'store_id' => Store::factory(),
+            'import_order_id' => null,
             'name' => $this->faker->company() . ' Shipping',
             'contact_person' => $this->faker->name(),
             'phone' => $this->faker->phoneNumber(),

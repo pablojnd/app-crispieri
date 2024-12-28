@@ -17,7 +17,6 @@ class BankFactory extends Factory
         return [
             'store_id' => Store::factory(),
             'bank_code_id' => BankCode::factory(),
-            'currency_id' => Currency::factory(),
             'account_number' => $this->faker->unique()->numerify('#########'),
             'account_type' => $this->faker->randomElement(['checking', 'savings', 'other']),
             'is_active' => $this->faker->boolean(90),

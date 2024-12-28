@@ -113,7 +113,7 @@ return new class extends Migration
         Schema::create('comex_shipping_lines', function (Blueprint $table) {
             $table->id('id');
             $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete();
-            $table->foreignId('import_order_id')->constrained('comex_import_orders')->cascadeOnDelete()->comment('Orden de importación asociada al contenedor');
+            $table->foreignId('import_order_id')->nullable()->constrained('comex_import_orders')->cascadeOnDelete()->comment('Orden de importación asociada al contenedor');
             $table->string('name')->comment('Nombre de la naviera');
             $table->string('contact_person')->nullable()->comment('Persona de contacto');
             $table->string('phone')->nullable()->comment('Teléfono de contacto');
