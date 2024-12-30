@@ -14,17 +14,17 @@ class ComexShippingLineFactory extends Factory
     {
         return [
             'store_id' => Store::factory(),
-            'import_order_id' => null,
+            // 'import_order_id' => null,
             'name' => $this->faker->company() . ' Shipping',
             'contact_person' => $this->faker->name(),
             'phone' => $this->faker->phoneNumber(),
             'email' => $this->faker->companyEmail(),
             'status' => $this->faker->randomElement(['active', 'inactive']),
+            // 'estimated_departure' => $this->faker->dateTimeBetween('now', '+1 year'),
+            // 'actual_departure' => $this->faker->optional()->dateTimeBetween('-1 year', 'now'),
+            // 'estimated_arrival' => $this->faker->dateTimeBetween('+1 year', '+2 years'),
+            // 'actual_arrival' => $this->faker->optional()->dateTimeBetween('+1 year', '+2 years'),
             'notes' => $this->faker->optional()->paragraph(),
-            'estimated_departure' => $this->faker->dateTimeBetween('now', '+1 year'),
-            'actual_departure' => $this->faker->optional()->dateTimeBetween('-1 year', 'now'),
-            'estimated_arrival' => $this->faker->dateTimeBetween('+1 year', '+2 years'),
-            'actual_arrival' => $this->faker->optional()->dateTimeBetween('+1 year', '+2 years'),
         ];
     }
 

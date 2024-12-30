@@ -76,6 +76,10 @@ class ExpensesRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('expense_type')
             ->columns([
+                Tables\Columns\SelectColumn::make('payment_status')
+                    ->options(PaymentStatus::class)
+                    ->label('Estado de Pago'),
+
                 Tables\Columns\TextColumn::make('expense_type')
                     ->badge()
                     ->sortable()

@@ -98,6 +98,10 @@ class ComexImportOrderResource extends Resource
                         ->label('Fecha de Orden')
                         ->default(now())
                         ->required(),
+
+                    Forms\Components\Placeholder::make('total_cif_and_expenses')
+                        ->label('Total CIF + Gastos')
+                        ->content(fn(ComexImportOrder $record): string => $record->getTotalCifAndExpenses())
                 ])
                 ->columns(2)
                 ->columnSpan(['lg' => 1]),
@@ -134,6 +138,13 @@ class ComexImportOrderResource extends Resource
                     ->label('Fecha')
                     ->date()
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('total_cif_and_expenses')
+                    ->label('Total CIF + Gastos')
+                    // ->money('USD')
+                    ->getStateUsing(function (ComexImportOrder $record): string {
+                        return $record->getTotalCifAndExpenses();
+                    }),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
@@ -172,6 +183,7 @@ class ComexImportOrderResource extends Resource
         return [
             RelationManagers\DocumentsRelationManager::class,
             RelationManagers\ShippingLineRelationManager::class,
+            // RelationManagers\ContainersRelationManager::class,
             RelationManagers\ItemsRelationManager::class,
             RelationManagers\ExpensesRelationManager::class,
         ];

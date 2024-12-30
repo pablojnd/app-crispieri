@@ -16,22 +16,21 @@ class ComexContainer extends Model
 
     protected $fillable = [
         'store_id',
-        'import_order_id', // Agregar este campo
+        'import_order_id',
+        'comex_shipping_line_container_id', // Agregar este campo
         'container_number',
         'type',
         'weight',
         'cost',
         'notes',
-        'shipping_line_id',
     ];
 
     protected $casts = [
+
         'weight' => 'decimal:2',
         'cost' => 'decimal:2',
         'type' => ContainerType::class,
     ];
-
-    protected $with = ['importOrder', 'shippingLine']; // Agregar shippingLine al eager loading
 
     public function store()
     {
@@ -59,8 +58,8 @@ class ComexContainer extends Model
             ->withTimestamps();
     }
 
-    public function shippingLine()
+    public function comexShippingLineContainer()
     {
-        return $this->belongsTo(ComexShippingLine::class, 'shipping_line_id');
+        return $this->belongsTo(ComexShippingLineContainer::class, 'comex_shipping_line_container_id');
     }
 }

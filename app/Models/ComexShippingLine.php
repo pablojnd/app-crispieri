@@ -22,31 +22,41 @@ class ComexShippingLine extends Model
         'email',
         'status',
         'notes',
-        'estimated_departure',
-        'actual_departure',
-        'estimated_arrival',
-        'actual_arrival',
+        // 'estimated_departure',
+        // 'actual_departure',
+        // 'estimated_arrival',
+        // 'actual_arrival',
     ];
 
-    protected $casts = [
-        'estimated_departure' => 'date',
-        'actual_departure' => 'date',
-        'estimated_arrival' => 'date',
-        'actual_arrival' => 'date',
-    ];
+    // protected $casts = [
+    //     'estimated_departure' => 'date',
+    //     'actual_departure' => 'date',
+    //     'estimated_arrival' => 'date',
+    //     'actual_arrival' => 'date',
+    // ];
 
     public function store()
     {
         return $this->belongsTo(Store::class);
     }
 
-    public function importOrder()
+    public function comexShippingLineContainer()
     {
-        return $this->belongsTo(ComexImportOrder::class, 'import_order_id');
+        return $this->hasMany(ComexShippingLineContainer::class, 'shipping_line_id');
+    }
+
+    public function importOrders()
+    {
+        return $this->belongsToMany(ComexImportOrder::class, 'comex_shipping_line_containers', 'shipping_line_id', 'import_order_id');
     }
 
     public function containers()
     {
-        return $this->hasMany(ComexContainer::class, 'shipping_line_id');
+        return $this->hasManyThrough(
+            ComexContainer::class,
+            ComexShippingLineContainer::class,
+            'shipping_line_id',
+            'comex_shipping_line_container_id'
+        );
     }
 }

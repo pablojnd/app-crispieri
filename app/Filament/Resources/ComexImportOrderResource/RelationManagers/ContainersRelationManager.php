@@ -39,7 +39,31 @@ class ContainersRelationManager extends RelationManager
                             Forms\Components\Select::make('shippingLine_ic')
                                 ->label('Nombre')
                                 ->relationship('shippingLine', 'name')
-                                // ->createOptionForm()
+                                ->placeholder('Seleccione una Naviera')
+                                ->required()
+                                ->searchable()
+                                ->preload()
+                                ->createOptionForm([
+                                    Forms\Components\TextInput::make('name')
+                                        ->label('Nombre')
+                                        ->required(),
+
+                                    Forms\Components\TextInput::make('contact_person')
+                                        ->label('Persona de Contacto')
+                                        ->required(),
+
+                                    Forms\Components\TextInput::make('phone')
+                                        ->label('Teléfono')
+                                        ->required(),
+
+                                    Forms\Components\TextInput::make('email')
+                                        ->label('Correo Electrónico')
+                                        ->required(),
+
+                                    Forms\Components\TextInput::make('address')
+                                        ->label('Dirección')
+                                        ->required(),
+                                ])
                                 ->required(),
 
                             Forms\Components\DatePicker::make('estimated_departure')
@@ -54,13 +78,13 @@ class ContainersRelationManager extends RelationManager
                             Forms\Components\DatePicker::make('actual_arrival')
                                 ->label('Llegada Real'),
 
-                            Forms\Components\Select::make('status')
-                                ->options([
-                                    'active' => 'Activo',
-                                    'inactive' => 'Inactivo',
-                                ])
-                                ->default('active')
-                                ->required(),
+                            // Forms\Components\Select::make('status')
+                            //     ->options([
+                            //         'active' => 'Activo',
+                            //         'inactive' => 'Inactivo',
+                            //     ])
+                            //     ->default('active')
+                            //     ->required(),
 
                             Forms\Components\Textarea::make('notes')
                                 ->label('Notas')
@@ -117,17 +141,12 @@ class ContainersRelationManager extends RelationManager
                     ->sortable()
                     ->label('Naviera'),
 
-                Tables\Columns\TextColumn::make('shippingLine.contact_person')
-                    ->searchable()
-                    ->toggleable()
-                    ->label('Contacto'),
-
-                Tables\Columns\TextColumn::make('shippingLine.estimated_departure')
+                Tables\Columns\TextColumn::make('estimated_departure')
                     ->date()
                     ->toggleable()
                     ->label('Fecha Est. Salida'),
 
-                Tables\Columns\TextColumn::make('shippingLine.estimated_arrival')
+                Tables\Columns\TextColumn::make('estimated_arrival')
                     ->date()
                     ->toggleable()
                     ->label('Fecha Est. Llegada'),

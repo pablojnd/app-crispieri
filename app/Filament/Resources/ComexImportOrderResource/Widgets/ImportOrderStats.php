@@ -69,7 +69,7 @@ class ImportOrderStats extends BaseWidget
 
     private function formatCurrency(float $amount): string
     {
-        return number_format($amount, self::CURRENCY_FORMAT, '.', ',');
+        return number_format($amount, self::CURRENCY_FORMAT, ',', '.');
     }
 
     private function generateChartData($finalValue): array

@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Support\Str;
 use App\Models\AttributeValue;
 use Filament\Facades\Filament;
+use App\Forms\Components\QRCode;
 use App\Models\ProductAttribute;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\MaxWidth;
@@ -57,18 +58,10 @@ class ProductResource extends Resource
                             Forms\Components\Grid::make(3)->schema([
                                 Forms\Components\TextInput::make('product_name')
                                     ->label('Nombre del Producto')
-                                    ->required()
-                                    ->live(onBlur: true)
-                                    ->dehydrateStateUsing(fn(string $state) => strtoupper($state))
-                                    ->afterStateUpdated(function (Get $get, Set $set, ?string $old, ?string $state) {
-                                        if (($get('slug') ?? '') !== Str::slug($old)) {
-                                            return;
-                                        }
-                                        $set('slug', Str::slug($state));
-                                    }),
+                                    ->required(),
                                 Forms\Components\TextInput::make('slug')
                                     ->label('URL Amigable')
-                                    ->required(),
+                                    ->visibleOn('edit'),
                                 Forms\Components\Select::make('category_id')
                                     ->relationship('category', 'name')
                                     ->label('Categoría')
@@ -94,6 +87,7 @@ class ProductResource extends Resource
                                         $get('is_taxable')
                                     ),
                             ]),
+
                             Forms\Components\RichEditor::make('description')
                                 ->label('Descripción')
                                 ->columnSpanFull(),
@@ -108,6 +102,7 @@ class ProductResource extends Resource
                                     ->label('Precio Regular')
                                     ->required()
                                     ->numeric()
+                                    ->default(0)
                                     ->prefix('$'),
                                 Forms\Components\TextInput::make('offer_price')
                                     ->label('Precio Oferta')
@@ -128,6 +123,7 @@ class ProductResource extends Resource
                                 Forms\Components\TextInput::make('stock')
                                     ->label('Stock Actual')
                                     ->numeric()
+                                    ->default(0)
                                     ->required(),
                                 Forms\Components\TextInput::make('minimum_stock')
                                     ->label('Stock Mínimo')

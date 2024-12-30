@@ -2,18 +2,19 @@
 
 namespace App\Filament\Resources\ComexImportOrderResource\RelationManagers;
 
-use App\Enums\ContainerType;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use App\Enums\ContainerType;
+use Filament\Support\Enums\MaxWidth;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Resources\RelationManagers\RelationManager;
 
 class ShippingLineRelationManager extends RelationManager
 {
-    protected static string $relationship = 'shippingLines';
+    protected static string $relationship = 'comexShippingLineContainers';
 
     protected static ?string $title = 'Navieras';
 
@@ -29,21 +30,28 @@ class ShippingLineRelationManager extends RelationManager
                     ->tabs([
                         Forms\Components\Tabs\Tab::make('Información General')
                             ->schema([
-                                Forms\Components\TextInput::make('name')
+                                Forms\Components\Select::make('shipping_line_id')
                                     ->label('Nombre de la Naviera')
+                                    ->relationship('shippingLine', 'name')
+                                    ->placeholder('Seleccione una Naviera')
+                                    ->preload()
+                                    ->searchable()
                                     ->required()
-                                    ->maxLength(255),
-                                Forms\Components\TextInput::make('contact_person')
-                                    ->label('Persona de Contacto')
-                                    ->maxLength(255),
-                                Forms\Components\TextInput::make('phone')
-                                    ->label('Teléfono')
-                                    ->tel()
-                                    ->maxLength(255),
-                                Forms\Components\TextInput::make('email')
-                                    ->label('Correo Electrónico')
-                                    ->email()
-                                    ->maxLength(255),
+                                    ->createOptionForm([
+                                        Forms\Components\TextInput::make('name')
+                                            ->label('Nombre')
+                                            ->required(),
+                                        Forms\Components\TextInput::make('contact_person')
+                                            ->label('Persona de Contacto')
+                                            ->required(),
+                                        Forms\Components\TextInput::make('phone')
+                                            ->label('Teléfono')
+                                            ->required(),
+                                        Forms\Components\TextInput::make('email')
+                                            ->label('Correo Electrónico')
+                                            ->required(),
+                                    ]),
+
                                 Forms\Components\DatePicker::make('estimated_departure')
                                     ->label('Fecha Estimada de Salida'),
                                 Forms\Components\DatePicker::make('actual_departure')
@@ -52,15 +60,6 @@ class ShippingLineRelationManager extends RelationManager
                                     ->label('Fecha Estimada de Llegada'),
                                 Forms\Components\DatePicker::make('actual_arrival')
                                     ->label('Fecha Real de Llegada'),
-                                Forms\Components\Select::make('status')
-                                    ->label('Estado')
-                                    ->options([
-                                        'active' => 'Activo',
-                                        'inactive' => 'Inactivo',
-                                        'in_transit' => 'En Tránsito',
-                                        'completed' => 'Completado'
-                                    ])
-                                    ->default('active'),
                                 Forms\Components\Textarea::make('notes')
                                     ->label('Notas')
                                     ->maxLength(65535)
@@ -69,7 +68,7 @@ class ShippingLineRelationManager extends RelationManager
                         Forms\Components\Tabs\Tab::make('Contenedores')
                             ->schema([
                                 Forms\Components\Repeater::make('containers')
-                                    ->relationship()
+                                    ->relationship('containers')
                                     ->schema([
                                         Forms\Components\TextInput::make('container_number')
                                             ->label('Número de Contenedor')
@@ -93,7 +92,8 @@ class ShippingLineRelationManager extends RelationManager
                                             ->label('Notas')
                                             ->maxLength(65535)
                                             ->columnSpanFull(),
-                                    ])->columns(3)
+                                    ])
+                                    ->columns(4)
                                     ->defaultItems(0)
                                     ->reorderable(false)
                                     ->columnSpanFull()
@@ -108,78 +108,45 @@ class ShippingLineRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('name')
+            ->recordTitleAttribute('id')
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                Tables\Columns\TextColumn::make('shippingLine.name')
                     ->label('Naviera')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('contact_person')
-                    ->label('Contacto')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('phone')
-                    ->label('Teléfono'),
-                Tables\Columns\TextColumn::make('email')
-                    ->label('Correo')
+
+                Tables\Columns\TextColumn::make('containers.container_number')
+                    ->label('Contenedores')
+                    ->listWithLineBreaks()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('estimated_departure')
-                    ->label('Salida Est.')
+                    ->label('Fecha Est. Salida')
                     ->date()
                     ->sortable(),
+
                 Tables\Columns\TextColumn::make('estimated_arrival')
-                    ->label('Llegada Est.')
+                    ->label('Fecha Est. Llegada')
                     ->date()
                     ->sortable(),
-                Tables\Columns\BadgeColumn::make('status')
-                    ->label('Estado')
-                    ->colors([
-                        'warning' => 'in_transit',
-                        'success' => 'active',
-                        'danger' => 'inactive',
-                        'primary' => 'completed',
-                    ]),
+
                 Tables\Columns\TextColumn::make('containers_count')
-                    ->label('Contenedores')
+                    ->label('# Contenedores')
                     ->counts('containers')
                     ->sortable(),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
-                    ->label('Estado')
-                    ->options([
-                        'active' => 'Activo',
-                        'inactive' => 'Inactivo',
-                        'in_transit' => 'En Tránsito',
-                        'completed' => 'Completado'
-                    ]),
-                Tables\Filters\Filter::make('estimated_departure')
-                    ->form([
-                        Forms\Components\DatePicker::make('departure_from')
-                            ->label('Fecha de Salida Desde'),
-                        Forms\Components\DatePicker::make('departure_until')
-                            ->label('Fecha de Salida Hasta'),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['departure_from'],
-                                fn(Builder $query, $date): Builder => $query->whereDate('estimated_departure', '>=', $date),
-                            )
-                            ->when(
-                                $data['departure_until'],
-                                fn(Builder $query, $date): Builder => $query->whereDate('estimated_departure', '<=', $date),
-                            );
-                    })
+                //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
-                    ->label('Nueva Naviera'),
+                Tables\Actions\CreateAction::make()->modalWidth(MaxWidth::SevenExtraLarge),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
-                    ->label('Editar'),
-                Tables\Actions\DeleteAction::make()
-                    ->label('Eliminar'),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make()->modalWidth(MaxWidth::FiveExtraLarge),
+                    Tables\Actions\DeleteAction::make(),
+                ]),
+                // Tables\Actions\EditAction::make()->modalWidth(MaxWidth::FiveExtraLarge),
+                // Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

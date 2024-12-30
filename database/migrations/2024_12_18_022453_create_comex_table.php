@@ -95,7 +95,6 @@ return new class extends Migration
             $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete();
             $table->foreignId('document_id')->constrained('comex_documents')->cascadeOnDelete();
             $table->foreignId('bank_id')->constrained('banks');
-
             $table->decimal('amount', 12, 2);
             $table->decimal('exchange_rate', 8, 2)->default(1.0000);
             $table->enum('payment_status', ['pending', 'completed', 'cancelled'])->default('pending');
@@ -113,28 +112,38 @@ return new class extends Migration
         Schema::create('comex_shipping_lines', function (Blueprint $table) {
             $table->id('id');
             $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete();
-            $table->foreignId('import_order_id')->nullable()->constrained('comex_import_orders')->cascadeOnDelete()->comment('Orden de importación asociada al contenedor');
             $table->string('name')->comment('Nombre de la naviera');
             $table->string('contact_person')->nullable()->comment('Persona de contacto');
             $table->string('phone')->nullable()->comment('Teléfono de contacto');
             $table->string('email')->nullable()->comment('Email de contacto');
             $table->string('status')->default('active')->comment('Estado de la naviera');
+            $table->text('notes')->nullable()->comment('Notas adicionales');
+            $table->timestamps();
+            $table->index('store_id');
+            $table->index('status');
+        });
+
+        // Tabla para contenedores de navieras
+        Schema::create('comex_shipping_line_containers', function (Blueprint $table) {
+            $table->id('id');
+            $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete();
+            $table->foreignId('shipping_line_id')->constrained('comex_shipping_lines')->cascadeOnDelete();
+            // $table->foreignId('import_order_id')->constrained('comex_import_orders')->cascadeOnDelete();
+            $table->foreignId('import_order_id')->nullable()->constrained('comex_import_orders')->cascadeOnDelete()->comment('Orden de importación asociada al contenedor');
+            // $table->foreignId('container_id')->constrained('comex_containers')->cascadeOnDelete();
             $table->date('estimated_departure')->nullable()->comment('Fecha estimada de salida');
             $table->date('actual_departure')->nullable()->comment('Fecha real de salida');
             $table->date('estimated_arrival')->nullable()->comment('Fecha estimada de llegada');
             $table->date('actual_arrival')->nullable()->comment('Fecha real de llegada');
             $table->text('notes')->nullable()->comment('Notas adicionales');
             $table->timestamps();
-
-            $table->index('store_id');
-            $table->index('status');
         });
 
         // Tabla comex_containers (contenedores de importación)
         Schema::create('comex_containers', function (Blueprint $table) {
             $table->id('id');
             $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete()->comment('Tienda asociada al contenedor');
-            $table->foreignId('shipping_line_id')->nullable()->constrained('comex_shipping_lines')->nullOnDelete();
+            $table->foreignId('comex_shipping_line_container_id')->nullable()->constrained('comex_shipping_line_containers')->nullOnDelete();
             $table->foreignId('import_order_id')->nullable()->constrained('comex_import_orders')->cascadeOnDelete()->comment('Orden de importación asociada al contenedor');
             $table->string('container_number')->unique()->comment('Número del contenedor');
             $table->enum('type', ['20GP', '40GP', '40HC', 'LCL', 'REEFER', 'OPEN_TOP'])->comment('Tipo de contenedor');

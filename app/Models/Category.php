@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Spatie\Sluggable\HasSlug;
 use Filament\Facades\Filament;
+use Spatie\Sluggable\SlugOptions;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Concerns\HasStoreTenancy;
@@ -12,7 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Category extends Model
 {
-    use HasFactory, HasStoreTenancy, SoftDeletes;
+    use HasFactory, HasStoreTenancy, SoftDeletes, HasSlug;
 
     protected $fillable = [
         'name',
@@ -26,6 +28,16 @@ class Category extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function getSlugOptions(): SlugOptions
+    {
+        return SlugOptions::create()
+            ->generateSlugsFrom('name')
+            ->saveSlugsTo('slug')
+            ->doNotGenerateSlugsOnUpdate()
+            ->usingSeparator('-')
+            ->usingLanguage('es');
+    }
 
     public function parent()
     {

@@ -74,9 +74,9 @@ class ComexImportOrder extends Model
         return $this->hasMany(ComexContainer::class, 'import_order_id');
     }
 
-    public function shippingLines()
+    public function comexShippingLineContainers()
     {
-        return $this->hasMany(ComexShippingLine::class, 'import_order_id');
+        return $this->hasMany(ComexShippingLineContainer::class, 'import_order_id');
     }
 
     public function items()
@@ -86,6 +86,26 @@ class ComexImportOrder extends Model
     public function expenses()
     {
         return $this->hasMany(ComexExpense::class, 'import_order_id');
+    }
+
+    // Agregar esta relación
+    public function shippingLines()
+    {
+        return $this->belongsToMany(ComexShippingLine::class, 'comex_shipping_line_containers', 'import_order_id', 'shipping_line_id')
+            ->using(ComexShippingLineContainer::class)
+            ->withPivot(['estimated_departure', 'actual_departure', 'estimated_arrival', 'actual_arrival'])
+            ->wherePivot('comex_shipping_line_containers.store_id', $this->store_id);
+    }
+
+    public function getTotalCifAndExpenses()
+    {
+        $totalCif = $this->documents()->sum('cif_total') ?? 0;
+
+        $totalExpenses = $this->expenses()
+            ->whereIn('payment_status', ['completed', 'partially_paid'])
+            ->sum('expense_amount') ?? 0;
+
+        return number_format($totalCif + $totalExpenses, 4, ',', '.');
     }
 
     protected static function newFactory()

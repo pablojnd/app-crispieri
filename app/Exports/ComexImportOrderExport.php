@@ -83,7 +83,7 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
             'País Origen',
             'Referencia',
             'Ref. Externa',
-            'Num. SVE',
+            // 'Num. SVE',
             'Tipo',
             'Estado',
             'Fecha Orden',
@@ -143,41 +143,38 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
     {
         $rows = [];
         $maxItems = $order->items->count();
-        $maxShippingLines = $order->shippingLines->count();
-        // Obtener todos los contenedores de todas las navieras
-        $containers = $order->shippingLines->flatMap->containers;
-        $maxContainers = $containers->count();
+        $maxShippingLineContainers = $order->comexShippingLineContainers->count();
         $maxDocs = $order->documents->count();
         $maxExpenses = $order->expenses->count();
-        $maxRows = max($maxItems, $maxShippingLines, $maxContainers, $maxDocs, $maxExpenses);
+        $maxRows = max($maxItems, $maxShippingLineContainers, $maxDocs, $maxExpenses);
 
         // Primera fila con datos principales
         $firstRow = [
             $order->store->name,
             $order->provider?->name,
-            $order->originCountry?->name,
+            $order->originCountry?->country_name,
             $order->reference_number,
             $order->external_reference,
-            $order->sve_registration_number,
-            $order->type->getLabel(), // Cambiado de ucfirst($order->type) a $order->type->getLabel()
+            // $order->sve_registration_number,
+            $order->type->getLabel(),
             $order->status->getLabel(),
             $order->order_date?->format('d/m/Y'),
         ];
 
-        // Agregar primera naviera
-        $firstShippingLine = $order->shippingLines->first();
-        if ($firstShippingLine) {
+        // Agregar primera naviera y sus datos
+        $firstShippingLineContainer = $order->comexShippingLineContainers->first();
+        if ($firstShippingLineContainer) {
             $firstRow = array_merge($firstRow, [
-                $firstShippingLine->name,
-                $firstShippingLine->estimated_departure?->format('d/m/Y'),
-                $firstShippingLine->estimated_arrival?->format('d/m/Y'),
+                $firstShippingLineContainer->shippingLine->name,
+                $firstShippingLineContainer->estimated_departure?->format('d/m/Y'),
+                $firstShippingLineContainer->estimated_arrival?->format('d/m/Y'),
             ]);
         } else {
             $firstRow = array_merge($firstRow, array_fill(0, 3, ''));
         }
 
         // Agregar primer contenedor
-        $firstContainer = $containers->first();
+        $firstContainer = $firstShippingLineContainer?->containers->first();
         if ($firstContainer) {
             $firstRow = array_merge($firstRow, [
                 $firstContainer->container_number,
@@ -260,25 +257,25 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
                 array_splice($row, 26, 6, $itemData);
             }
 
-            // Agregar datos de naviera adicional si existe
-            if ($i < $maxShippingLines) {
-                $shippingLine = $order->shippingLines[$i];
+            // Agregar datos de naviera y contenedor adicional si existe
+            if ($i < $maxShippingLineContainers) {
+                $shippingLineContainer = $order->comexShippingLineContainers[$i];
                 array_splice($row, 9, 3, [
-                    $shippingLine->name,
-                    $shippingLine->estimated_departure?->format('d/m/Y'),
-                    $shippingLine->estimated_arrival?->format('d/m/Y'),
+                    $shippingLineContainer->shippingLine->name,
+                    $shippingLineContainer->estimated_departure?->format('d/m/Y'),
+                    $shippingLineContainer->estimated_arrival?->format('d/m/Y'),
                 ]);
-            }
 
-            // Agregar contenedor si existe
-            if ($i < $maxContainers) {
-                $container = $containers[$i];
-                array_splice($row, 12, 4, [
-                    $container->container_number,
-                    $container->type->getLabel(),
-                    $this->formatNumber($container->weight, 2),
-                    $this->formatNumber($container->cost, 2),
-                ]);
+                // Agregar contenedor asociado
+                $container = $shippingLineContainer->containers->first();
+                if ($container) {
+                    array_splice($row, 12, 4, [
+                        $container->container_number,
+                        $container->type->getLabel(),
+                        $this->formatNumber($container->weight, 2),
+                        $this->formatNumber($container->cost, 2),
+                    ]);
+                }
             }
 
             // Agregar documento adicional si existe
@@ -351,14 +348,15 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
         // Calcular el gran total
         $granTotal = 0;
 
-        // Sumar totales de documentos
-        $granTotal += $order->documents->sum('cif_total');
+        // Sumar CIF total de todos los documentos
+        $cifTotal = $order->documents->sum('cif_total');
+        $granTotal += $cifTotal;
 
-        // Sumar totales por tipo de gasto
-        foreach (ExpenseType::cases() as $expenseType) {
-            $expenses = $expensesByType->get($expenseType->value, collect());
-            $granTotal += $expenses->sum(fn($e) => $e->expense_quantity * $e->expense_amount);
-        }
+        // Sumar gastos asociados (solo el monto total de cada gasto)
+        $expensesTotal = $order->expenses->sum(function ($expense) {
+            return $expense->expense_amount;  // Cambiado para usar solo el monto del gasto
+        });
+        $granTotal += $expensesTotal;
 
         // Agregar una columna más al final con el gran total
         $totalRow[] = $this->formatNumber($granTotal, 2);
@@ -379,7 +377,8 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
                 'provider',
                 'originCountry',
                 'items',
-                'shippingLines.containers', // Removido .type ya que es un enum
+                'comexShippingLineContainers.shippingLine',
+                'comexShippingLineContainers.containers',
                 'documents',
                 'expenses'
             ])
