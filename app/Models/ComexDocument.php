@@ -86,6 +86,11 @@ class ComexDocument extends Model
             ->withTimestamps();
     }
 
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(ComexExpense::class, 'document_id');
+    }
+
     public function getItemsTooltipAttribute(): string
     {
         if (!$this->items->count()) {

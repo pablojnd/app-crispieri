@@ -214,6 +214,9 @@ return new class extends Migration
             $table->id('id');
             $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete();
             $table->foreignId('import_order_id')->constrained('comex_import_orders')->cascadeOnDelete();
+            $table->foreignId('document_id')->nullable()->constrained('comex_documents')->nullOnDelete()->comment('Documento asociado al gasto');
+            $table->foreignId('shipping_line_id')->nullable()->constrained('comex_shipping_lines')->nullOnDelete()->comment('Naviera asociada al gasto');
+            $table->foreignId('container_id')->nullable()->constrained('comex_containers')->nullOnDelete()->comment('Contenedor asociado al gasto');
             $table->foreignId('currency_id')->constrained('currencies')->comment('Moneda del gasto');
             $table->date('expense_date')->comment('Fecha del gasto');
             $table->enum('expense_type', [
@@ -240,6 +243,9 @@ return new class extends Migration
             $table->index(['import_order_id', 'expense_type']);
             $table->index('store_id');
             $table->index('expense_date');
+            $table->index(['document_id']);
+            $table->index(['shipping_line_id']);
+            $table->index(['container_id']);
         });
     }
 

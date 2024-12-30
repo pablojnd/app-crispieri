@@ -18,6 +18,9 @@ class ComexExpense extends Model
     protected $fillable = [
         'store_id',
         'import_order_id',
+        'document_id',
+        'shipping_line_id',
+        'container_id',
         'currency_id',
         'expense_date',
         'expense_type',
@@ -53,5 +56,21 @@ class ComexExpense extends Model
     public function currency()
     {
         return $this->belongsTo(Currency::class);
+    }
+
+    // Nuevas relaciones
+    public function document()
+    {
+        return $this->belongsTo(ComexDocument::class, 'document_id');
+    }
+
+    public function shippingLine()
+    {
+        return $this->belongsTo(ComexShippingLine::class, 'shipping_line_id');
+    }
+
+    public function container()
+    {
+        return $this->belongsTo(ComexContainer::class, 'container_id');
     }
 }

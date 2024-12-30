@@ -62,4 +62,9 @@ class ComexContainer extends Model
     {
         return $this->belongsTo(ComexShippingLineContainer::class, 'comex_shipping_line_container_id');
     }
+
+    public function expenses()
+    {
+        return $this->hasMany(ComexExpense::class, 'container_id');
+    }
 }

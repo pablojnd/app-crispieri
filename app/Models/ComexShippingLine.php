@@ -59,4 +59,9 @@ class ComexShippingLine extends Model
             'comex_shipping_line_container_id'
         );
     }
+
+    public function expenses()
+    {
+        return $this->hasMany(ComexExpense::class, 'shipping_line_id');
+    }
 }
