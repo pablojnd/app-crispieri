@@ -99,9 +99,15 @@ class ComexImportOrderResource extends Resource
                         ->default(now())
                         ->required(),
 
+                    Forms\Components\TextInput::make('exchange_rate')
+                        ->label('Cambio')
+                        ->numeric()
+                        ->default(1)
+                        ->required(),
+
                     Forms\Components\Placeholder::make('total_cif_and_expenses')
                         ->label('Total CIF + Gastos')
-                        ->content(fn(ComexImportOrder $record): string => $record->getTotalCifAndExpenses())
+                        ->content(fn($record) => $record ? $record->getTotalCifAndExpenses() : '0.00')
                 ])
                 ->columns(2)
                 ->columnSpan(['lg' => 1]),

@@ -76,16 +76,9 @@ class ProductResource extends Resource
                                 Forms\Components\TextInput::make('hs_code')
                                     ->label('Código HS')
                                     ->helperText('Código de clasificación arancelaria'),
-                                Forms\Components\Toggle::make('is_taxable')
-                                    ->label('Aplica Impuesto')
-                                    ->default(false),
-                                Forms\Components\TextInput::make('tax_rate')
-                                    ->label('Tasa de Impuesto (%)')
-                                    ->numeric()
-                                    ->visible(
-                                        fn(Get $get) =>
-                                        $get('is_taxable')
-                                    ),
+                                Forms\Components\TextInput::make('code')
+                                    ->label('Código Interno'),
+
                             ]),
 
                             Forms\Components\RichEditor::make('description')
@@ -157,90 +150,99 @@ class ProductResource extends Resource
                                 ]),
                         ]),
 
-                    // Tab 4: Atributos
+                    // Tab de Atributos refactorizado
                     Forms\Components\Tabs\Tab::make('Atributos')
                         ->icon('heroicon-o-adjustments-horizontal')
                         ->schema([
                             Forms\Components\Section::make('Atributos del producto')
                                 ->description('Seleccione los atributos y sus valores correspondientes')
                                 ->schema([
-                                    Forms\Components\Repeater::make('attributeValues')
-                                        ->relationship()
+                                    Forms\Components\Repeater::make('product_attributes')
+                                        ->relationship('product_attribute_values')
                                         ->schema([
-                                            Forms\Components\Grid::make(2)
-                                                ->schema([
-                                                    Forms\Components\Select::make('attribute_id')
-                                                        ->label('Atributo')
-                                                        ->options(function () {
-                                                            return Attribute::query()
-                                                                ->where('store_id', Filament::getTenant()->id)
-                                                                ->where('is_active', true)
-                                                                ->pluck('name', 'id');
-                                                        })
-                                                        ->live()
+                                            Forms\Components\Select::make('attribute_id')
+                                                ->label('Atributo')
+                                                ->options(fn() => Attribute::query()
+                                                    ->where('store_id', Filament::getTenant()->id)
+                                                    ->pluck('name', 'id'))
+                                                ->required()
+                                                ->live()
+                                                ->preload()
+                                                ->searchable()
+                                                ->createOptionForm([
+                                                    Forms\Components\TextInput::make('name')
                                                         ->required()
-                                                        ->afterStateUpdated(function (Set $set) {
-                                                            $set('attribute_value_id', null);
-                                                        }),
-
-                                                    Forms\Components\Select::make('attribute_value_id')
-                                                        ->label('Valor')
-                                                        ->options(function (Get $get) {
-                                                            $attributeId = $get('attribute_id');
-                                                            if (!$attributeId) return [];
-
-                                                            return AttributeValue::query()
-                                                                ->where('attribute_id', $attributeId)
-                                                                ->pluck('value', 'id');
-                                                        })
-                                                        ->createOptionForm([
+                                                        ->maxLength(255)
+                                                        ->unique('attributes', 'name'),
+                                                    Forms\Components\Repeater::make('values')
+                                                        ->schema([
                                                             Forms\Components\TextInput::make('value')
-                                                                ->label('Nuevo valor')
-                                                                ->required(),
-                                                            Forms\Components\Hidden::make('attribute_id')
-                                                                ->default(function (Get $get) {
-                                                                    return $get('../../attribute_id');
-                                                                }),
+                                                                ->required()
+                                                                ->maxLength(255),
                                                         ])
-                                                        ->createOptionAction(
-                                                            function (Forms\Components\Actions\Action $action) {
-                                                                return $action->modalHeading('Crear nuevo valor');
-                                                            }
-                                                        )
-                                                        ->createOptionUsing(function (array $data, Get $get) {
-                                                            $attributeId = $data['attribute_id'] ?? $get('../../attribute_id');
+                                                        ->defaultItems(1)
+                                                        ->minItems(1)
+                                                        ->addActionLabel('Agregar valor'),
+                                                ])
+                                                ->createOptionUsing(function (array $data) {
+                                                    $attribute = Attribute::create([
+                                                        'name' => $data['name'],
+                                                        'is_required' => $data['is_required'] ?? false,
+                                                        'is_active' => $data['is_active'] ?? true,
+                                                        'store_id' => Filament::getTenant()->id,
+                                                    ]);
 
-                                                            if (!$attributeId) {
-                                                                throw new \Exception('Debe seleccionar un atributo primero');
-                                                            }
+                                                    // Crear los valores del atributo
+                                                    foreach ($data['values'] as $valueData) {
+                                                        $attribute->values()->create([
+                                                            'value' => $valueData['value'],
+                                                        ]);
+                                                    }
 
-                                                            return AttributeValue::create([
-                                                                'attribute_id' => $attributeId,
-                                                                'value' => $data['value'],
-                                                            ])->id;
-                                                        })
-                                                        ->searchable()
-                                                        ->preload()
+                                                    return $attribute->id;
+                                                })
+                                                ->afterStateUpdated(fn(Set $set) => $set('attribute_value_id', null)),
+
+                                            Forms\Components\Select::make('attribute_value_id')
+                                                ->label('Valor')
+                                                ->options(function (Get $get) {
+                                                    $attributeId = $get('attribute_id');
+                                                    if (!$attributeId) return [];
+
+                                                    return AttributeValue::query()
+                                                        ->where('attribute_id', $attributeId)
+                                                        ->pluck('value', 'id');
+                                                })
+                                                ->required()
+                                                ->live()
+                                                ->createOptionForm([
+                                                    Forms\Components\TextInput::make('value')
                                                         ->required()
-                                                        ->visible(fn(Get $get) => (bool) $get('attribute_id'))
-                                                        ->live(),
-                                                ]),
+                                                        ->maxLength(255),
+                                                ])
+                                                ->createOptionUsing(function (array $data, Get $get) {
+                                                    return AttributeValue::create([
+                                                        'attribute_id' => $get('attribute_id'),
+                                                        'value' => $data['value'],
+                                                    ])->id;
+                                                })
+                                                ->visible(fn(Get $get) => filled($get('attribute_id')))
                                         ])
+                                        ->columns(2)
+                                        ->itemLabel(
+                                            fn(array $state): ?string =>
+                                            Attribute::find($state['attribute_id'])?->name . ': ' .
+                                                AttributeValue::find($state['attribute_value_id'])?->value
+                                        )
                                         ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
                                             return [
-                                                'attribute_value_id' => $data['attribute_value_id']
+                                                'attribute_id' => $data['attribute_id'],
+                                                'attribute_value_id' => $data['attribute_value_id'],
                                             ];
                                         })
-                                        ->defaultItems(0)
-                                        ->addActionLabel('Agregar atributo')
-                                        ->reorderableWithButtons()
                                         ->collapsible()
-                                        ->itemLabel(function (array $state): ?string {
-                                            $attribute = Attribute::find($state['attribute_id'] ?? null);
-                                            $value = AttributeValue::find($state['attribute_value_id'] ?? null);
-
-                                            return $attribute && $value ? "{$attribute->name}: {$value->value}" : null;
-                                        }),
+                                        ->defaultItems(0)
+                                        ->addActionLabel('Agregar atributo'),
                                 ]),
                         ]),
 
@@ -249,10 +251,13 @@ class ProductResource extends Resource
                         ->icon('heroicon-o-building-office')
                         ->schema([
                             Forms\Components\Grid::make(2)->schema([
+                                Forms\Components\Select::make('supplier_id')
+                                    ->label('Proveedor')
+                                    ->relationship('supplier', 'name')
+                                    ->searchable()
+                                    ->preload(),
                                 Forms\Components\TextInput::make('supplier_code')
                                     ->label('Código de Proveedor'),
-                                Forms\Components\TextInput::make('supplier_reference')
-                                    ->label('Referencia de Proveedor'),
                                 Forms\Components\TextInput::make('barcode')
                                     ->label('Código de Barras'),
                                 Forms\Components\TextInput::make('ean_code')

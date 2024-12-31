@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use App\Enums\ExpenseType;
 use Filament\Tables\Table;
 use App\Enums\PaymentStatus;
+use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Resources\RelationManagers\RelationManager;
 
@@ -20,7 +21,7 @@ class ExpensesRelationManager extends RelationManager
     protected static ?string $pluralModelLabel = 'Gastos';
     protected static ?string $recordTitleAttribute = 'expense_type';
 
-    protected static ?string $tenantOwnershipRelationshipName = 'store';
+    // protected static ?string $tenantOwnershipRelationshipName = 'store';
 
     // Configuración explícita de la relación
     protected static ?string $inverseRelationship = 'importOrder';
@@ -30,44 +31,75 @@ class ExpensesRelationManager extends RelationManager
     public function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Grid::make(2)->schema([
+            Forms\Components\Grid::make(3)->schema([
+                Forms\Components\Select::make('documents')
+                    ->label('Documentos')
+                    ->multiple()
+                    ->relationship(
+                        'documents',
+                        'document_number',
+                        fn($query) => $query->where('import_order_id', $this->ownerRecord->id)
+                    )
+                    ->preload(),
+
+                Forms\Components\Select::make('shipping_lines')
+                    ->label('Navieras')
+                    ->multiple()
+                    ->relationship(
+                        'shippingLines',
+                        'name',
+                        fn($query) => $query->whereHas(
+                            'comexShippingLineContainer',
+                            fn($q) => $q->where('import_order_id', $this->ownerRecord->id)
+                        )
+                    )
+                    ->preload(),
+
+                Forms\Components\Select::make('containers')
+                    ->label('Contenedores')
+                    ->multiple()
+                    ->relationship(
+                        'containers',
+                        'container_number',
+                        fn($query) => $query->where('import_order_id', $this->ownerRecord->id)
+                    )
+                    ->preload(),
+
                 Forms\Components\Select::make('currency_id')
+                    ->label('Moneda')
                     ->relationship('currency', 'name')
-                    ->searchable()
-                    ->preload()
-                    ->required()
-                    ->label('Moneda'),
+                    ->required(),
 
                 Forms\Components\DatePicker::make('expense_date')
-                    ->required()
-                    ->default(now())
-                    ->label('Fecha'),
+                    ->label('Fecha')
+                    ->required(),
 
                 Forms\Components\Select::make('expense_type')
+                    ->label('Tipo de Gasto')
                     ->options(ExpenseType::class)
-                    ->required()
-                    ->label('Tipo de Gasto'),
+                    ->required(),
 
                 Forms\Components\TextInput::make('expense_quantity')
+                    ->label('Cantidad')
                     ->numeric()
-                    ->label('Cantidad'),
+                    ->default(1),
 
                 Forms\Components\TextInput::make('expense_amount')
-                    ->numeric()
+                    ->label('Monto')
                     ->required()
-                    ->default(0)
-                    ->label('Monto'),
+                    ->numeric()
+                    ->default(0),
 
                 Forms\Components\Select::make('payment_status')
+                    ->label('Estado de Pago')
                     ->options(PaymentStatus::class)
-                    ->default(PaymentStatus::PENDING)
-                    ->label('Estado de Pago'),
-            ]),
+                    ->default('pending')
+                    ->required(),
 
-            Forms\Components\Textarea::make('notes')
-                ->maxLength(500)
-                ->columnSpanFull()
-                ->label('Notas'),
+                Forms\Components\Textarea::make('notes')
+                    ->label('Notas')
+                    ->columnSpanFull(),
+            ]),
         ]);
     }
 
@@ -112,6 +144,21 @@ class ExpensesRelationManager extends RelationManager
                         return $record->notes ?? null;
                     })
                     ->label('Notas'),
+
+                Tables\Columns\TextColumn::make('documents.document_number')
+                    ->label('Documentos')
+                    ->listWithLineBreaks()
+                    ->limitList(3),
+
+                Tables\Columns\TextColumn::make('shippingLines.name')
+                    ->label('Navieras')
+                    ->listWithLineBreaks()
+                    ->limitList(3),
+
+                Tables\Columns\TextColumn::make('containers.container_number')
+                    ->label('Contenedores')
+                    ->listWithLineBreaks()
+                    ->limitList(3),
             ])
             ->defaultSort('expense_date', 'desc')
             ->filters([

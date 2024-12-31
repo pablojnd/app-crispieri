@@ -3,18 +3,20 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Filament\Models\Contracts\FilamentUser;
-use Filament\Models\Contracts\HasTenants;
-use Illuminate\Notifications\Notifiable;
 use Filament\Panel;
-use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Notifiable;
+use Filament\Models\Contracts\HasTenants;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasDefaultTenant;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Support\Collection;
 
-class User extends Authenticatable implements FilamentUser, HasTenants
+class User extends Authenticatable implements FilamentUser, HasTenants, HasDefaultTenant
 {
     use HasFactory, Notifiable;
 
@@ -22,6 +24,7 @@ class User extends Authenticatable implements FilamentUser, HasTenants
         'name',
         'email',
         'password',
+        'latest_store_id', // Añadimos latest_store_id a fillable
     ];
 
     protected $hidden = [
@@ -47,9 +50,23 @@ class User extends Authenticatable implements FilamentUser, HasTenants
         return $this->stores;
     }
 
-    public function getDefaultTenant(Panel $panel): ?Store
+    public function getDefaultTenant(Panel $panel): ?Model
     {
-        return $this->latestStore;
+        // Si no hay tienda por defecto, retornamos la primera tienda del usuario
+        return $this->latestStore ?? $this->stores()->first();
+    }
+
+    public function latestStore(): BelongsTo
+    {
+        return $this->belongsTo(Store::class, 'latest_store_id');
+    }
+
+    public function setDefaultStore(Store $store): void
+    {
+        if ($this->stores->contains($store)) {
+            $this->latest_store_id = $store->id;
+            $this->save();
+        }
     }
 
     public function canAccessTenant(Model $tenant): bool

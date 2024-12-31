@@ -34,6 +34,11 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        // Añadimos latest_store_id a la tabla users
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreignId('latest_store_id')->nullable()->constrained('stores');
+        });
+
         Schema::create('store_settings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('store_id')->constrained()->cascadeOnDelete();
@@ -49,6 +54,13 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['latest_store_id']);
+            $table->dropColumn('latest_store_id');
+        });
+
+        Schema::dropIfExists('store_settings');
+        Schema::dropIfExists('store_user');
         Schema::dropIfExists('stores');
     }
 };

@@ -41,6 +41,7 @@ class Product extends Model
         'length',
         'width',
         'height',
+        'code',
         'barcode',
         'ean_code',
         'is_taxable',
@@ -85,6 +86,16 @@ class Product extends Model
             ->usingLanguage('es');
     }
 
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(Store::class);
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Provider::class);
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
@@ -104,13 +115,20 @@ class Product extends Model
     {
         return $this->belongsToMany(AttributeValue::class, 'product_attribute_values')
             ->using(ProductAttributeValue::class)
-            ->withTimestamps();
+            ->withTimestamps()
+            ->withPivot('attribute_id');
     }
 
     // Nueva relación para el repeater
     public function product_attribute_values(): HasMany
     {
         return $this->hasMany(ProductAttributeValue::class);
+    }
+
+    public function attributes(): BelongsToMany
+    {
+        return $this->belongsToMany(Attribute::class, 'product_attribute_values')
+            ->withPivot('attribute_value_id');
     }
 
     protected function productName(): Attribute

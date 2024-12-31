@@ -34,6 +34,7 @@ return new class extends Migration
                 ->default('draft')
                 ->comment('Estado de la orden');
             $table->date('order_date')->comment('Fecha de creación de la orden');
+            $table->decimal('exchange_rate', 8, 4)->default(1.0000)->comment('Tipo de cambio');
             $table->timestamps();
             $table->softDeletes();
 
@@ -143,7 +144,7 @@ return new class extends Migration
         Schema::create('comex_containers', function (Blueprint $table) {
             $table->id('id');
             $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete()->comment('Tienda asociada al contenedor');
-            $table->foreignId('comex_shipping_line_container_id')->nullable()->constrained('comex_shipping_line_containers')->nullOnDelete();
+            $table->foreignId('comex_shipping_line_container_id')->constrained('comex_shipping_line_containers')->cascadeOnDelete();
             $table->foreignId('import_order_id')->nullable()->constrained('comex_import_orders')->cascadeOnDelete()->comment('Orden de importación asociada al contenedor');
             $table->string('container_number')->unique()->comment('Número del contenedor');
             $table->enum('type', ['20GP', '40GP', '40HC', 'LCL', 'REEFER', 'OPEN_TOP'])->comment('Tipo de contenedor');
@@ -151,7 +152,6 @@ return new class extends Migration
             $table->decimal('cost', 15, 2)->default(0.00)->comment('Costo del contenedor');
             $table->text('notes')->nullable()->comment('Notas adicionales');
             $table->timestamps();
-            $table->softDeletes();
         });
 
         // Tabla pivote para la relación muchos a muchos entre documentos y contenedores
@@ -246,6 +246,36 @@ return new class extends Migration
             $table->index(['document_id']);
             $table->index(['shipping_line_id']);
             $table->index(['container_id']);
+        });
+
+        // Tabla pivote para gastos y documentos
+        Schema::create('comex_expense_documents', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('expense_id')->constrained('comex_expenses')->cascadeOnDelete();
+            $table->foreignId('document_id')->constrained('comex_documents')->cascadeOnDelete();
+            $table->timestamps();
+
+            $table->unique(['expense_id', 'document_id']);
+        });
+
+        // Tabla pivote para gastos y contenedores
+        Schema::create('comex_expense_containers', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('expense_id')->constrained('comex_expenses')->cascadeOnDelete();
+            $table->foreignId('container_id')->constrained('comex_containers')->cascadeOnDelete();
+            $table->timestamps();
+
+            $table->unique(['expense_id', 'container_id']);
+        });
+
+        // Tabla pivote para gastos y navieras
+        Schema::create('comex_expense_shipping_lines', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('expense_id')->constrained('comex_expenses')->cascadeOnDelete();
+            $table->foreignId('shipping_line_id')->constrained('comex_shipping_lines')->cascadeOnDelete();
+            $table->timestamps();
+
+            $table->unique(['expense_id', 'shipping_line_id']);
         });
     }
 

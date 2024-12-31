@@ -68,6 +68,16 @@ class Store extends Model
         return $this->hasMany(Product::class);
     }
 
+    public function attributes(): HasMany
+    {
+        return $this->hasMany(Attribute::class);
+    }
+
+    public function measurementUnits(): HasMany
+    {
+        return $this->hasMany(MeasurementUnit::class);
+    }
+
     public function providers(): HasMany
     {
         return $this->hasMany(Provider::class);

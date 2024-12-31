@@ -59,19 +59,27 @@ class DocumentsRelationManager extends RelationManager
                                 Forms\Components\Grid::make(4)
                                     ->schema([
                                         Forms\Components\TextInput::make('fob_total')
+                                            ->label('FOB')
                                             ->numeric()
                                             ->required()
-                                            ->label('FOB'),
+                                            ->live()
+                                            ->default(0)
+                                            ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                                $set('insurance_total', round($state * 0.02, 4));
+                                            }),
 
                                         Forms\Components\TextInput::make('freight_total')
                                             ->numeric()
                                             ->required()
+                                            ->default(0)
                                             ->label('Flete'),
 
                                         Forms\Components\TextInput::make('insurance_total')
                                             ->numeric()
                                             ->required()
-                                            ->label('Seguro'),
+                                            ->default(0)
+                                            ->label('Seguro')
+                                            ->helperText('2% del FOB por defecto'),
 
                                         Forms\Components\TextInput::make('cif_total')
                                             ->numeric()

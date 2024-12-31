@@ -47,7 +47,9 @@ class ComexShippingLine extends Model
 
     public function importOrders()
     {
-        return $this->belongsToMany(ComexImportOrder::class, 'comex_shipping_line_containers', 'shipping_line_id', 'import_order_id');
+        return $this->belongsToMany(ComexImportOrder::class, 'comex_shipping_line_containers', 'shipping_line_id', 'import_order_id')
+            ->withPivot(['estimated_departure', 'actual_departure', 'estimated_arrival', 'actual_arrival'])
+            ->wherePivot('comex_shipping_line_containers.store_id', auth()->user()->store_id);
     }
 
     public function containers()
@@ -62,6 +64,7 @@ class ComexShippingLine extends Model
 
     public function expenses()
     {
-        return $this->hasMany(ComexExpense::class, 'shipping_line_id');
+        return $this->belongsToMany(ComexExpense::class, 'comex_expense_shipping_lines', 'shipping_line_id', 'expense_id')
+            ->withTimestamps();
     }
 }

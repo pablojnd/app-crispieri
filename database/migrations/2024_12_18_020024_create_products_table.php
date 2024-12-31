@@ -51,11 +51,8 @@ return new class extends Migration
             $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete();
             $table->foreignId('category_id')->constrained('categories')->cascadeOnDelete();
             $table->foreignId('brand_id')->constrained('brands')->cascadeOnDelete();
-            $table->foreignId('measurement_unit_id')
-                ->nullable()
-                ->constrained('measurement_units')
-                ->nullOnDelete()
-                ->comment('Unidad de medida del producto');
+            $table->foreignId('measurement_unit_id')->nullable()->constrained('measurement_units')->nullOnDelete()->comment('Unidad de medida del producto');
+            $table->foreignId('supplier_id')->nullable()->constrained('providers')->nullOnDelete()->comment('Proveedor del producto');
 
             // Campos originales
             $table->string('product_name');
@@ -74,7 +71,6 @@ return new class extends Migration
             $table->date('offer_end_date')->nullable()->comment('Fecha de fin de oferta');
 
             $table->string('supplier_code')->nullable()->comment('Código de proveedor');
-            $table->string('supplier_reference')->nullable()->comment('Referencia del proveedor');
 
             $table->string('packing_type')->nullable()->comment('Tipo de empaque');
             $table->decimal('packing_quantity', 10, 2)->nullable()->comment('Cantidad por empaque');
@@ -84,6 +80,7 @@ return new class extends Migration
             $table->decimal('width', 10, 2)->nullable()->comment('Ancho del producto');
             $table->decimal('height', 10, 2)->nullable()->comment('Altura del producto');
 
+            $table->string('code')->nullable()->comment('Código del producto');
             $table->string('barcode')->nullable()->comment('Código de barras');
             $table->string('ean_code')->nullable()->comment('Código EAN');
 
@@ -108,29 +105,25 @@ return new class extends Migration
 
         Schema::create('attributes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('store_id')
-                ->constrained('stores')
-                ->cascadeOnDelete();
+            $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete();
             $table->string('name');
+            $table->boolean('is_required')->default(false);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
         });
 
         Schema::create('attribute_values', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('attribute_id')
-                ->constrained()
-                ->cascadeOnDelete();
+            $table->foreignId('attribute_id')->constrained()->cascadeOnDelete();
             $table->string('value');
+            $table->timestamps();
         });
 
         Schema::create('product_attribute_values', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')
-                ->constrained()
-                ->cascadeOnDelete();
-            $table->foreignId('attribute_value_id')
-                ->constrained()
-                ->cascadeOnDelete();
-            $table->timestamps();
+            $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
+            $table->foreignId('attribute_id')->constrained('attributes')->cascadeOnDelete();
+            $table->foreignId('attribute_value_id')->constrained('attribute_values')->cascadeOnDelete();
         });
     }
 

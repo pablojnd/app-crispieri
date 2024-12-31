@@ -60,30 +60,16 @@ class CategoryResource extends Resource
                                             )
                                             ->preload()
                                             ->searchable()
-                                            ->placeholder('Seleccione una categoría padre')
-                                            ->columnSpan(1),
+                                            ->placeholder('Seleccione una categoría padre'),
 
                                         Forms\Components\TextInput::make('name')
                                             ->label('Nombre')
                                             ->required()
-                                            ->maxLength(255)
-                                            ->live(onBlur: true)
-                                            ->afterStateUpdated(function (Get $get, Set $set, ?string $old, ?string $state) {
-                                                if (($get('slug') ?? '') !== Str::slug($old)) {
-                                                    return;
-                                                }
-
-                                                $set('slug', Str::slug($state));
-                                            })
-                                            ->columnSpan(1),
+                                            ->maxLength(255),
                                     ]),
 
                                 Forms\Components\TextInput::make('slug')
                                     ->label('URL Amigable')
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->unique(ignoreRecord: true)
-                                    ->helperText('URL única para la categoría')
                                     ->prefixIcon('heroicon-o-link'),
 
                                 Forms\Components\Textarea::make('description')

@@ -7,8 +7,10 @@ use Filament\Tables;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Forms\Form;
+use App\Models\Attribute;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
+use App\Models\AttributeValue;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -178,11 +180,11 @@ class ItemsRelationManager extends RelationManager
                                         }
                                         $set('slug', Str::slug($state));
                                     }),
-                                Forms\Components\TextInput::make('slug')
-                                    ->label('URL Amigable'),
                                 Forms\Components\Select::make('category_id')
                                     ->relationship('category', 'name')
                                     ->label('Categoría')
+                                    ->searchable()
+                                    ->preload()
                                     ->createOptionForm([
                                         Forms\Components\TextInput::make('name')
                                             ->label('Nombre de la Categoría')
@@ -192,6 +194,8 @@ class ItemsRelationManager extends RelationManager
                                 Forms\Components\Select::make('brand_id')
                                     ->relationship('brand', 'name')
                                     ->label('Marca')
+                                    ->searchable()
+                                    ->preload()
                                     ->createOptionForm([
                                         Forms\Components\TextInput::make('name')
                                             ->label('Nombre de la Marca')
@@ -200,6 +204,8 @@ class ItemsRelationManager extends RelationManager
                                 Forms\Components\Select::make('measurement_unit_id')
                                     ->relationship('measurementUnit', 'name')
                                     ->label('Unidad de Medida')
+                                    ->searchable()
+                                    ->preload()
                                     ->createOptionForm(function () {
                                         return static::getMeasurementUnitsFormSchema();
                                     })
@@ -207,16 +213,10 @@ class ItemsRelationManager extends RelationManager
                                 Forms\Components\TextInput::make('hs_code')
                                     ->label('Código HS')
                                     ->helperText('Código de clasificación arancelaria'),
-                                Forms\Components\Toggle::make('is_taxable')
-                                    ->label('Aplica Impuesto')
-                                    ->default(false),
-                                Forms\Components\TextInput::make('tax_rate')
-                                    ->label('Tasa de Impuesto (%)')
-                                    ->numeric()
-                                    ->visible(
-                                        fn(Get $get) =>
-                                        $get('is_taxable')
-                                    ),
+
+                                Forms\Components\TextInput::make('code')
+                                    ->label('Código Interno')
+                                    ->helperText('Código interno del producto'),
                             ]),
                             Forms\Components\RichEditor::make('description')
                                 ->label('Descripción')
@@ -265,34 +265,122 @@ class ItemsRelationManager extends RelationManager
                         ]),
 
                     // Tab 4: Atributos
-                    // Forms\Components\Tabs\Tab::make('Atributos')
-                    //     ->icon('heroicon-o-adjustments-horizontal')
-                    //     ->schema([
-                    //         Forms\Components\Repeater::make('productAttributes')
-                    //             ->relationship()
-                    //             ->schema([
-                    //                 Forms\Components\Select::make('attribute_id')
-                    //                     ->label('Atributo')
-                    //                     ->relationship('attribute', 'name')
-                    //                     ->required()
-                    //                     ->live()
-                    //                     ->afterStateUpdated(
-                    //                         fn($state, Set $set) =>
-                    //                         $set('attribute_value_id', null)
-                    //                     ),
-                    //                 Forms\Components\Select::make('attribute_value_id')
-                    //                     ->label('Valor')
-                    //                     ->relationship('attributeValue', 'value')
-                    //                     ->required()
-                    //                     ->visible(
-                    //                         fn(Get $get) =>
-                    //                         filled($get('attribute_id'))
-                    //                     ),
-                    //             ])
-                    //             ->columns(2),
-                    //     ]),
+                    Forms\Components\Tabs\Tab::make('Atributos')
+                        ->icon('heroicon-o-adjustments-horizontal')
+                        ->schema([
+                            Forms\Components\Section::make('Atributos del producto')
+                                ->description('Seleccione los atributos y sus valores correspondientes')
+                                ->schema([
+                                    Forms\Components\Repeater::make('product_attributes')
+                                        ->relationship('product_attribute_values')
+                                        ->schema([
+                                            Forms\Components\Select::make('attribute_id')
+                                                ->label('Atributo')
+                                                ->options(fn() => Attribute::query()
+                                                    ->where('store_id', Filament::getTenant()->id)
+                                                    ->pluck('name', 'id'))
+                                                ->required()
+                                                ->live()
+                                                ->preload()
+                                                ->searchable()
+                                                ->createOptionForm([
+                                                    Forms\Components\TextInput::make('name')
+                                                        ->required()
+                                                        ->maxLength(255)
+                                                        ->unique('attributes', 'name'),
+                                                    Forms\Components\Repeater::make('values')
+                                                        ->schema([
+                                                            Forms\Components\TextInput::make('value')
+                                                                ->required()
+                                                                ->maxLength(255),
+                                                        ])
+                                                        ->defaultItems(1)
+                                                        ->minItems(1)
+                                                        ->addActionLabel('Agregar valor'),
+                                                ])
+                                                ->createOptionUsing(function (array $data) {
+                                                    $attribute = Attribute::create([
+                                                        'name' => $data['name'],
+                                                        'is_required' => $data['is_required'] ?? false,
+                                                        'is_active' => $data['is_active'] ?? true,
+                                                        'store_id' => Filament::getTenant()->id,
+                                                    ]);
 
-                    // Tab 6: Multimedia
+                                                    // Crear los valores del atributo
+                                                    foreach ($data['values'] as $valueData) {
+                                                        $attribute->values()->create([
+                                                            'value' => $valueData['value'],
+                                                        ]);
+                                                    }
+
+                                                    return $attribute->id;
+                                                })
+                                                ->afterStateUpdated(fn(Set $set) => $set('attribute_value_id', null)),
+
+                                            Forms\Components\Select::make('attribute_value_id')
+                                                ->label('Valor')
+                                                ->options(function (Get $get) {
+                                                    $attributeId = $get('attribute_id');
+                                                    if (!$attributeId) return [];
+
+                                                    return AttributeValue::query()
+                                                        ->where('attribute_id', $attributeId)
+                                                        ->pluck('value', 'id');
+                                                })
+                                                ->required()
+                                                ->live()
+                                                ->createOptionForm([
+                                                    Forms\Components\TextInput::make('value')
+                                                        ->required()
+                                                        ->maxLength(255),
+                                                ])
+                                                ->createOptionUsing(function (array $data, Get $get) {
+                                                    return AttributeValue::create([
+                                                        'attribute_id' => $get('attribute_id'),
+                                                        'value' => $data['value'],
+                                                    ])->id;
+                                                })
+                                                ->visible(fn(Get $get) => filled($get('attribute_id')))
+                                        ])
+                                        ->columns(2)
+                                        ->itemLabel(
+                                            fn(array $state): ?string =>
+                                            Attribute::find($state['attribute_id'])?->name . ': ' .
+                                                AttributeValue::find($state['attribute_value_id'])?->value
+                                        )
+                                        ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
+                                            return [
+                                                'attribute_id' => $data['attribute_id'],
+                                                'attribute_value_id' => $data['attribute_value_id'],
+                                            ];
+                                        })
+                                        ->collapsible()
+                                        ->defaultItems(0)
+                                        ->addActionLabel('Agregar atributo'),
+                                ]),
+                        ]),
+
+                    // Tab 6: Datos de Proveedor
+                    Forms\Components\Tabs\Tab::make('Proveedor')
+                        ->icon('heroicon-o-building-office')
+                        ->schema([
+                            Forms\Components\Grid::make(2)->schema([
+                                Forms\Components\Select::make('supplier_id')
+                                    ->label('Proveedor')
+                                    ->relationship('supplier', 'name')
+                                    ->searchable()
+                                    ->preload()
+                                    ->required(),
+                                Forms\Components\TextInput::make('supplier_code')
+                                    ->label('Código de Proveedor'),
+                                Forms\Components\TextInput::make('barcode')
+                                    ->label('Código de Barras'),
+                                Forms\Components\TextInput::make('ean_code')
+                                    ->label('Código EAN'),
+                            ]),
+                        ]),
+
+                    // Tab 7: Multimedia
                     Forms\Components\Tabs\Tab::make('Multimedia')
                         ->icon('heroicon-o-photo')
                         ->schema([
@@ -300,12 +388,11 @@ class ItemsRelationManager extends RelationManager
                                 ->label('Imágenes')
                                 ->multiple()
                                 ->image()
-                                ->panelLayout('grid')
                                 ->maxFiles(5)
                                 ->columnSpanFull(),
                         ]),
                 ])
-                ->persistTab()
+                // ->persistTab()
                 ->id('product-tabs')
                 ->columnSpanFull()
         ];

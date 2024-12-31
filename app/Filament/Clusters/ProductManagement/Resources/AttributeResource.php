@@ -37,31 +37,54 @@ class AttributeResource extends Resource
         return $form->schema([
             Forms\Components\Section::make()
                 ->schema([
-                    Forms\Components\TextInput::make('name')
-                        ->label('Nombre del atributo')
-                        ->required()
-                        ->maxLength(255),
-                    Forms\Components\Toggle::make('is_required')
-                        ->label('¿Es requerido?')
-                        ->default(false),
-                    Forms\Components\Toggle::make('is_active')
-                        ->label('¿Está activo?')
-                        ->default(true),
-                    Forms\Components\Repeater::make('values')
-                        ->label('Valores del atributo')
-                        ->relationship()
+                    Forms\Components\Grid::make(2)
                         ->schema([
-                            Forms\Components\TextInput::make('value')
-                                ->label('Valor')
+                            Forms\Components\TextInput::make('name')
+                                ->label('Nombre del atributo')
                                 ->required()
-                                ->maxLength(255),
+                                ->maxLength(255)
+                                ->unique(ignoreRecord: true)
+                                ->columnSpan(1),
+
+                            Forms\Components\Grid::make(2)
+                                ->schema([
+                                    Forms\Components\Toggle::make('is_required')
+                                        ->label('¿Es requerido?')
+                                        ->default(false),
+                                    Forms\Components\Toggle::make('is_active')
+                                        ->label('¿Está activo?')
+                                        ->default(true),
+                                ])
+                                ->columnSpan(1),
+                        ]),
+
+                    Forms\Components\Section::make('Valores del atributo')
+                        ->schema([
+                            Forms\Components\Repeater::make('values')
+                                ->label(false)
+                                ->relationship()
+                                ->schema([
+                                    Forms\Components\Grid::make(2)
+                                        ->schema([
+                                            Forms\Components\TextInput::make('value')
+                                                ->label('Valor')
+                                                ->required()
+                                                ->maxLength(255)
+
+                                        ]),
+                                ])
+                                ->itemLabel(
+                                    fn(array $state): ?string =>
+                                    $state['value'] ?? null
+                                )
+                                ->collapsible()
+                                ->reorderableWithButtons()
+                                ->defaultItems(1)
+                                ->addActionLabel('Agregar valor')
+                                ->columnSpanFull(),
                         ])
-                        ->defaultItems(1)
-                        ->addActionLabel('Agregar valor')
-                        ->reorderableWithButtons()
-                        ->collapsible()
-                        ->columnSpanFull(),
-                ])->columns(3),
+                        ->collapsible(),
+                ]),
         ]);
     }
 
@@ -73,40 +96,74 @@ class AttributeResource extends Resource
                     ->label('Nombre')
                     ->searchable()
                     ->sortable(),
+
                 Tables\Columns\IconColumn::make('is_required')
                     ->label('Requerido')
-                    ->boolean(),
+                    ->boolean()
+                    ->sortable(),
+
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Activo')
-                    ->boolean(),
+                    ->boolean()
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('values_count')
                     ->label('Valores')
                     ->counts('values')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Creado')
+
+                Tables\Columns\TextColumn::make('products_count')
+                    ->label('Productos')
+                    ->counts('products')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->label('Actualizado')
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_active')
-                    ->label('Activo')
+                    ->label('Estado')
                     ->boolean()
                     ->trueLabel('Activos')
                     ->falseLabel('Inactivos')
                     ->native(false),
+
+                Tables\Filters\TernaryFilter::make('is_required')
+                    ->label('Requerido')
+                    ->boolean()
+                    ->trueLabel('Requeridos')
+                    ->falseLabel('Opcionales')
+                    ->native(false),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                // ->before(function (AttributeResource $resource, Model $record) {
+                //     if ($record->products()->count() > 0) {
+                //         Notification::make()
+                //             ->warning()
+                //             ->title('No se puede eliminar')
+                //             ->body('Este atributo está siendo usado por productos.')
+                //             ->send();
+
+                //         $record->update(['is_active' => false]);
+                //         return redirect()->back();
+                //     }
+                // }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->modifyQueryUsing(fn(Builder $query) => $query->withCount('values'));
+            ->defaultSort('created_at', 'desc')
+            ->modifyQueryUsing(
+                fn(Builder $query) => $query
+                    ->withCount(['values', 'products'])
+            );
     }
 
     public static function getRelations(): array

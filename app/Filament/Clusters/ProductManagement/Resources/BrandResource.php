@@ -49,19 +49,10 @@ class BrandResource extends Resource
                             Forms\Components\TextInput::make('name')
                                 ->label('Nombre')
                                 ->required()
-                                ->maxLength(255)
-                                ->live(onBlur: true)
-                                ->afterStateUpdated(
-                                    fn(Get $get, Set $set, ?string $old, ?string $state) =>
-                                    $get('slug') === Str::slug($old) ?
-                                        $set('slug', Str::slug($state)) : null
-                                ),
+                                ->maxLength(255),
 
                             Forms\Components\TextInput::make('slug')
                                 ->label('Slug')
-                                ->required()
-                                ->maxLength(255)
-                                ->unique(ignoreRecord: true)
                                 ->helperText('URL amigable para la marca'),
 
                             Forms\Components\Textarea::make('description')
@@ -72,12 +63,12 @@ class BrandResource extends Resource
 
                     Forms\Components\Section::make('Multimedia')
                         ->schema([
-                            Forms\Components\FileUpload::make('logo')
-                                ->label('Logo')
-                                ->image()
-                                ->directory('brands')
-                                ->imageEditor()
-                                ->columnSpanFull(),
+                            // Forms\Components\FileUpload::make('logo')
+                            //     ->label('Logo')
+                            //     ->image()
+                            //     ->directory('brands')
+                            //     ->imageEditor()
+                            //     ->columnSpanFull(),
                         ]),
 
                     Forms\Components\Section::make('Configuración')
@@ -85,8 +76,8 @@ class BrandResource extends Resource
                             Forms\Components\Toggle::make('is_active')
                                 ->label('Activa')
                                 ->default(true),
-                            Forms\Components\Toggle::make('is_featured')
-                                ->label('Destacada'),
+                            // Forms\Components\Toggle::make('is_featured')
+                            //     ->label('Destacada'),
                         ])->columns(2),
                 ])->columns(1),
         ]);

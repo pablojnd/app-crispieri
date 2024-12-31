@@ -33,6 +33,21 @@ class ComexShippingLineContainer extends Model
 
     protected $with = ['containers']; // Agregar eager loading de contenedores
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($shippingLineContainer) {
+            // Al eliminar una naviera, primero eliminamos sus contenedores
+            $shippingLineContainer->containers->each(function ($container) {
+                $container->items()->detach();
+                $container->documents()->detach();
+                $container->expenses()->detach();
+                $container->delete();
+            });
+        });
+    }
+
     public function shippingLine()
     {
         return $this->belongsTo(ComexShippingLine::class, 'shipping_line_id');

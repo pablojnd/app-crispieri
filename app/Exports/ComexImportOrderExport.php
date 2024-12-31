@@ -139,7 +139,125 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
         return number_format($number, $decimals, ',', '.');
     }
 
+    private function getColumnIndexes(): array
+    {
+        $baseIndex = 0;
+        return [
+            'base' => [
+                'store' => $baseIndex++,         // 0
+                'provider' => $baseIndex++,      // 1
+                'country' => $baseIndex++,       // 2
+                'reference' => $baseIndex++,     // 3
+                'external_ref' => $baseIndex++,  // 4
+                'type' => $baseIndex++,         // 5
+                'status' => $baseIndex++,       // 6
+                'date' => $baseIndex++,         // 7
+            ],
+            'shipping' => [
+                'line' => $baseIndex++,         // 8
+                'departure' => $baseIndex++,    // 9
+                'arrival' => $baseIndex++,      // 10
+            ],
+            'container' => [
+                'number' => $baseIndex++,       // 11
+                'type' => $baseIndex++,         // 12
+                'weight' => $baseIndex++,       // 13
+                'cost' => $baseIndex++,         // 14
+            ],
+            'document' => [
+                'number' => $baseIndex++,       // 15
+                'type' => $baseIndex++,         // 16
+                'clause' => $baseIndex++,       // 17
+                'fob' => $baseIndex++,          // 18
+                'freight' => $baseIndex++,      // 19
+                'insurance' => $baseIndex++,    // 20
+                'cif' => $baseIndex++,          // 21
+                'factor' => $baseIndex++,       // 22
+                'paid' => $baseIndex++,         // 23
+                'pending' => $baseIndex++,      // 24
+            ],
+            'item' => [
+                'product' => $baseIndex++,      // 25
+                'packages' => $baseIndex++,     // 26
+                'quantity' => $baseIndex++,     // 27
+                'total_price' => $baseIndex++,  // 28
+                'unit_price' => $baseIndex++,   // 29
+                'cif_unit' => $baseIndex++,     // 30
+            ],
+            'expenses_start' => $baseIndex,     // 31
+            'total_general' => 67              // Última columna
+        ];
+    }
+
+    private function calculateTotals($order, array &$totalRow): void
+    {
+        $indexes = $this->getColumnIndexes();
+
+        // Documentos
+        $docTotals = $order->documents->reduce(function ($carry, $doc) {
+            return [
+                'fob' => $carry['fob'] + $doc->fob_total,
+                'freight' => $carry['freight'] + $doc->freight_total,
+                'insurance' => $carry['insurance'] + $doc->insurance_total,
+                'cif' => $carry['cif'] + $doc->cif_total,
+                'paid' => $carry['paid'] + $doc->total_paid,
+                'pending' => $carry['pending'] + $doc->pending_amount
+            ];
+        }, ['fob' => 0, 'freight' => 0, 'insurance' => 0, 'cif' => 0, 'paid' => 0, 'pending' => 0]);
+
+        $totalRow[$indexes['document']['fob']] = $this->formatNumber($docTotals['fob']);
+        $totalRow[$indexes['document']['freight']] = $this->formatNumber($docTotals['freight']);
+        $totalRow[$indexes['document']['insurance']] = $this->formatNumber($docTotals['insurance']);
+        $totalRow[$indexes['document']['cif']] = $this->formatNumber($docTotals['cif']);
+        $totalRow[$indexes['document']['paid']] = $this->formatNumber($docTotals['paid']);
+        $totalRow[$indexes['document']['pending']] = $this->formatNumber($docTotals['pending']);
+
+        // Items
+        $itemTotals = $order->items->reduce(function ($carry, $item) {
+            return [
+                'quantity' => $carry['quantity'] + $item->quantity,
+                'total' => $carry['total'] + $item->total_price,
+                'cif' => $carry['cif'] + ($item->cif_unit * $item->quantity)
+            ];
+        }, ['quantity' => 0, 'total' => 0, 'cif' => 0]);
+
+        $totalRow[$indexes['item']['quantity']] = $this->formatNumber($itemTotals['quantity']);
+        $totalRow[$indexes['item']['total_price']] = $this->formatNumber($itemTotals['total']);
+        $totalRow[$indexes['item']['cif_unit']] = $this->formatNumber($itemTotals['cif']);
+
+        // Gastos
+        $expenseTotal = 0;
+        foreach (ExpenseType::cases() as $type) {
+            $startIdx = $indexes['expenses_start'] + ($type->ordinal() * 3);
+            $expenses = $order->expenses->where('expense_type', $type->value);
+
+            $amount = $expenses->sum('expense_amount');
+            $expenseTotal += $amount;
+
+            $totalRow[$startIdx] = $this->formatNumber($expenses->sum('expense_quantity'));
+            $totalRow[$startIdx + 1] = $this->formatNumber($amount);
+        }
+
+        // Total General (CIF + Gastos)
+        $totalRow[$indexes['total_general']] = $this->formatNumber($docTotals['cif'] + $expenseTotal);
+    }
+
     private function getData($order): array
+    {
+        $rows = $this->getDataRows($order);
+
+        // Agregar fila de totales
+        $totalRow = array_fill(0, count($this->getFlattenedColumns()), '');
+        $totalRow[0] = 'TOTALES';
+
+        $this->calculateTotals($order, $totalRow);
+
+        $rows[] = $totalRow;
+
+        return $rows;
+    }
+
+    private function getDataRows($order): array
     {
         $rows = [];
         $maxItems = $order->items->count();
@@ -312,56 +430,6 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
 
             $rows[] = $row;
         }
-
-        // Agregar filas de totales (corregir índices)
-        $totalRow = array_fill(0, count($this->getFlattenedColumns()), '');
-        $totalRow[0] = 'TOTALES';
-
-        // Totales de items
-        $totalRow[28] = $this->formatNumber($order->items->sum('quantity'), 2); // Total cantidad
-        $totalRow[29] = $this->formatNumber($order->items->sum('total_price'), 4); // Total precio
-        $totalRow[30] = ''; // No aplica promedio unit_price
-        $totalRow[31] = $this->formatNumber($order->items->sum('cif_unit'), 4); // Total CIF
-
-        // Totales de documentos
-        $totalRow[19] = $this->formatNumber($order->documents->sum('fob_total'), 2); // FOB
-        $totalRow[20] = $this->formatNumber($order->documents->sum('freight_total'), 2); // Flete
-        $totalRow[21] = $this->formatNumber($order->documents->sum('insurance_total'), 2); // Seguro
-        $totalRow[22] = $this->formatNumber($order->documents->sum('cif_total'), 2); // CIF
-        $totalRow[23] = ''; // Factor no aplica en totales
-        $totalRow[24] = $this->formatNumber($order->documents->sum('total_paid'), 2); // Pagado
-        $totalRow[25] = $this->formatNumber($order->documents->sum('pending_amount'), 2); // Pendiente
-
-        // Totales por tipo de gasto
-        $startColumn = 32;
-        foreach (ExpenseType::cases() as $expenseType) {
-            $expenses = $expensesByType->get($expenseType->value, collect());
-            $totalQuantity = $expenses->sum('expense_quantity');
-            $totalAmount = $expenses->sum('expense_amount');
-            $totalCost = $expenses->sum(fn($e) => $e->expense_quantity * $e->expense_amount);
-
-            $totalRow[$startColumn + ($expenseType->ordinal() * 3)] = $this->formatNumber($totalQuantity, 2);
-            $totalRow[$startColumn + ($expenseType->ordinal() * 3) + 1] = $this->formatNumber($totalAmount, 2);
-            // No incluimos estado en totales
-        }
-
-        // Calcular el gran total
-        $granTotal = 0;
-
-        // Sumar CIF total de todos los documentos
-        $cifTotal = $order->documents->sum('cif_total');
-        $granTotal += $cifTotal;
-
-        // Sumar gastos asociados (solo el monto total de cada gasto)
-        $expensesTotal = $order->expenses->sum(function ($expense) {
-            return $expense->expense_amount;  // Cambiado para usar solo el monto del gasto
-        });
-        $granTotal += $expensesTotal;
-
-        // Agregar una columna más al final con el gran total
-        $totalRow[] = $this->formatNumber($granTotal, 2);
-
-        $rows[] = $totalRow;
 
         return $rows;
     }

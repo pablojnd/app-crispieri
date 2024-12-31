@@ -10,7 +10,7 @@ class AttributeValue extends Model
 {
     protected $fillable = [
         'attribute_id',
-        'value'
+        'value',
     ];
 
     public $timestamps = false;
@@ -22,6 +22,8 @@ class AttributeValue extends Model
 
     public function products(): BelongsToMany
     {
-        return $this->belongsToMany(Product::class, 'product_attribute_values');
+        return $this->belongsToMany(Product::class, 'product_attribute_values')
+            ->using(ProductAttributeValue::class)
+            ->withPivot('attribute_id');
     }
 }

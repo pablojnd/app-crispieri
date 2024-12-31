@@ -10,14 +10,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ComexContainer extends Model
 {
-    use HasFactory, HasStoreTenancy, SoftDeletes;
+    use HasFactory, HasStoreTenancy;
 
     protected $table = 'comex_containers';
 
     protected $fillable = [
         'store_id',
         'import_order_id',
-        'comex_shipping_line_container_id', // Agregar este campo
+        'comex_shipping_line_container_id',
         'container_number',
         'type',
         'weight',
@@ -31,6 +31,18 @@ class ComexContainer extends Model
         'cost' => 'decimal:2',
         'type' => ContainerType::class,
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($container) {
+            // Eliminar registros relacionados si es necesario
+            $container->items()->detach();
+            $container->documents()->detach();
+            $container->expenses()->detach();
+        });
+    }
 
     public function store()
     {
@@ -65,6 +77,7 @@ class ComexContainer extends Model
 
     public function expenses()
     {
-        return $this->hasMany(ComexExpense::class, 'container_id');
+        return $this->belongsToMany(ComexExpense::class, 'comex_expense_containers', 'container_id', 'expense_id')
+            ->withTimestamps();
     }
 }

@@ -86,9 +86,15 @@ class ComexDocument extends Model
             ->withTimestamps();
     }
 
-    public function expenses(): HasMany
+    // public function expenses(): HasMany
+    // {
+    //     return $this->hasMany(ComexExpense::class, 'document_id');
+    // }
+
+    public function expenses()
     {
-        return $this->hasMany(ComexExpense::class, 'document_id');
+        return $this->belongsToMany(ComexExpense::class, 'comex_expense_documents', 'document_id', 'expense_id')
+            ->withTimestamps();
     }
 
     public function getItemsTooltipAttribute(): string
@@ -152,28 +158,28 @@ class ComexDocument extends Model
         return $totalItemsPrice > 0 ? round($cif / $totalItemsPrice, 9) : 0;
     }
 
-    public function updateFactor(): void
-    {
-        $totalItemsPrice = $this->getTotalItemsPriceAttribute();
-        $factor = $this->calculateFactor($totalItemsPrice);
+    // public function updateFactor(): void
+    // {
+    //     $totalItemsPrice = $this->getTotalItemsPriceAttribute();
+    //     $factor = $this->calculateFactor($totalItemsPrice);
 
-        $this->update(['factor' => $factor]);
+    //     $this->update(['factor' => $factor]);
 
-        foreach ($this->items()->get() as $item) {
-            $cifAmount = $item->total_price * $factor;
-            $cifUnit = $item->quantity > 0 ? ($cifAmount / $item->quantity) : 0;
+    //     foreach ($this->items()->get() as $item) {
+    //         $cifAmount = $item->total_price * $factor;
+    //         $cifUnit = $item->quantity > 0 ? ($cifAmount / $item->quantity) : 0;
 
-            $this->items()->updateExistingPivot($item->id, [
-                'cif_amount' => $cifAmount,
-            ]);
+    //         $this->items()->updateExistingPivot($item->id, [
+    //             'cif_amount' => $cifAmount,
+    //         ]);
 
-            $item->update([
-                'cif_unit' => $cifUnit,
-            ]);
-        }
+    //         $item->update([
+    //             'cif_unit' => $cifUnit,
+    //         ]);
+    //     }
 
-        $this->refresh();
-    }
+    //     $this->refresh();
+    // }
 
     protected function calculateFactor(float $totalItemsPrice): float
     {
