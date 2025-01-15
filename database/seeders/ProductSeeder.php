@@ -2,16 +2,114 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Product;
 use Illuminate\Database\Seeder;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class ProductSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        //
+        $products = [
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'INASTILLABLE 10MM 3.30X2.14'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'TEMPLADOS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CUARZO BIANCO DIAMOND'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CUARZO CRYSTAL WHITE'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CUARZO BN-Q C06'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PEGAMENTO BCO. FLEXIBLE'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PEGAMENTO CERÁMICA '],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PEGAMENTO PISCINA CHEMAYLIC PEPELMA'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'FRAGUADOR BLANCO'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'FRAGUADOR MARFIL'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ACRILICO ARABESCO CHAMPAÑA'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ACRILICO ARTICO CHAMPAÑA'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ACRILICO ARABESCO INCOLORO'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ACRILICO ARTICO INCOLORO'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ACRILICO MOROCO INCOLORO'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ACRILICO SEMILLA INCOLORO'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PASTO SJZGZA-35(X) IBIZA'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PASTO SJZLG-MT-L-50 FUTBOL'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'VIDRIO INCOLORO 2MM 183X153'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ESPEJO PANORÁMICO CONVEXO 45CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ESPEJO PANORAMICO CONVEXO 60CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ESPEJO PANORAMICO CONVEXO 80CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ACRILICO 4MM 125X185CM'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ESPUMA NIVELADORA'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ZOCALO 7725G'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ZOCALO 8003G PARDO'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ZOCALO 178-4 ROBLE'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ZOCALO 6268 CEREZO'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PISO FLOTANTE 7225G GRIZATO 1210X195X8.3MM'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PISO FLOTANTE 88164-8 GRISACEO 1210X195X8.3MM'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PISO FLOTANTE 228 AVELLANA 1210X195X8.3MM'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PISO FLOTANTE ATM01 CASTAÑO 1210X195X8.3MM'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PISO FLOTANTE 6268 CEREZO 1210X195X8.3MM'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PISO FLOTANTE 922 INVECHIATTO MOZAFIATO 1210X195X8.3MM'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PISO FLOTANTE SN001 CENIZA 1215X145X12MM'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ZOCALO 17280-11G GUINDA 2400X80X2.5MM'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ZOCALO 7225G GRIZATO 2400X80X2.5MM'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ZOCALO SPC 127 ALGARROBO 2400X80X2.5MM'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ZOCALO SPC 2004-1 GUAYACAN 2400X80X2.5MM'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ZOCALO SPC 0004-6 QUILLAY 2400X80X2.5MM'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ZOCALO SPC 1002-30 RADAL 2400X80X2.5MM'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ZOCALO SPC 4025 CARZA 2400X80X2.5MM'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CERAMICA 45348 ARTICO MARMARA 45X45CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CERAMICA 45358 DELFOS 45X45CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CERAMICA 45358 DELFOS 45X45CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CERAMICA 45452 CIMENTO NEU'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CERAMICA 56004 MADERA REAL 56X56CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'VIDRIO INCOLORO 4MM 2.44X1.83MTS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ETIQUETA DIGITAL STag42R 105 * 93.5 * 13.5 mm'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ETIQUETA DIGITAL DS035Q 99.5*49.5*9.8 mm'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'MODEM GATEWAY G1- E 3- CANALES BLUETOOTH'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'SOPORTE PARA ETIQUETA DIGITAL '],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'RIEL PARA ETIQUETA DIGITAL'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CERAMICA ARAUCANO 20X60CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CERAMICA ARAUCANO 20X60CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CERAMICA MOSETEN 20X60CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CERAMICA ERUCAPE 20X60CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CERAMICA MURO VENECIA 30X45CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CERAMICA CIMIENTO 20X60CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'MOTOR SY25-05 1.1 KW PARA MAQUINA PULIDORA'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'BASE ALUMINIO SY22-50 PARA MAQUINA PULIDORA'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'VENTOSA BASE SY22-39 45MM PARA MAQUINA PULIDORA'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CUBIERTA PLANA A PRUEBA DE AGUA 165X70MM PARA MAQUINA PULIDORA'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CUBIERTA A PRUEBA DE AGUA 130X70 / 110X70MM PARA MAQUINA PULIDORA'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'TUBO DE ROCIADO HILO 1/2" PARA MAQUINA PULIDORA'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'TUBO DE ROCIADO HILO 1/2" PARA MAQUINA PULIDORA 1'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'TUBO DE ROCIADO HILO 1/2" PARA MAQUINA PULIDORA 2'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'ACRILICO NIAGARA INCOLORO'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'INSTRUMENTAL MEDICO QUIRURGICO'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'IMPLANTES ORTOPEDICOS PARA OSTEOSINTESIS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PORCELANATO EQF6031 60X60 CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PORCELANATO S65273 60X60 CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PORCELANATO S65085 60X60 CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PORCELANATO EQF6009 60X60 CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PORCELANATO EQF6028 60X60 CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PORCELANATO BL62003 60X60 CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PORCELANATO B6686'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PORCELANATO PW10306 20X100 CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PORCELANATO PW9301 15X90 CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PORCELANATO PW9307 15X90 CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PORCELANTO PW10303'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PORCELANATO PW10307 20X100 CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'REPUESTOS PARA MAQUINA DE PULIR'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'VIDRIO CATEDRAL SEMILLA BRONCE 2.44X1.83 MTS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'VIDRIO INCOLORO 5MM 3.30X2.25 MTS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CERAMICA MURO VENECIA 30X45CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CERAMICA CIMIENTO 20X60CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CERAMICA ARAUCANO'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CERAMICA MOSETEN 20X60CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'CERAMICA ERUCAPE 20X60CMS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'PEGAMEMENTO PORCELANATO 20 KG'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'FRAGUADOR GRIS'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'FARGUADOR CHOCOLATE'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'FRAGUADOR CREPUSCULO'],
+            ['store_id' => 3, 'category_id' => 1, 'brand_id' => 1, 'measurement_unit_id' => 12, 'product_name' => 'FRAGUADOR AZUL'],
+        ];
+
+        foreach ($products as $product) {
+            Product::create($product);
+        }
     }
 }

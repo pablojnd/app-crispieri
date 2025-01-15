@@ -8,8 +8,9 @@ enum ImportOrderStatus: string implements \Filament\Support\Contracts\HasLabel, 
     case CONFIRMED = 'confirmed';
     case IN_TRANSIT = 'in_transit';
     case IN_CUSTOMS = 'in_customs';
-    case IN_ZOFRI = 'in_zofri';
+    case GALPON = 'galpon';
     case RECEIVED = 'received';
+    case FINISH = 'finish';
     case CANCELLED = 'cancelled';
 
     public function getLabel(): ?string
@@ -19,8 +20,9 @@ enum ImportOrderStatus: string implements \Filament\Support\Contracts\HasLabel, 
             self::CONFIRMED => 'Confirmado',
             self::IN_TRANSIT => 'En Tránsito',
             self::IN_CUSTOMS => 'En Aduana',
-            self::IN_ZOFRI => 'En ZOFRI',
+            self::GALPON => 'En Galpón',
             self::RECEIVED => 'Recibido',
+            self::FINISH => 'Finalizado',
             self::CANCELLED => 'Cancelado',
         };
     }
@@ -32,8 +34,9 @@ enum ImportOrderStatus: string implements \Filament\Support\Contracts\HasLabel, 
             self::CONFIRMED => 'info',
             self::IN_TRANSIT => 'warning',
             self::IN_CUSTOMS => 'warning',
-            self::IN_ZOFRI => 'warning',
+            self::GALPON => 'warning',
             self::RECEIVED => 'success',
+            self::FINISH => 'success',
             self::CANCELLED => 'danger',
         };
     }

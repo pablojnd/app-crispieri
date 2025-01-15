@@ -15,11 +15,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
 
-        // User::factory()->create([
-        //     'name' => 'admin User',
-        //     'email' => 'admin@admin.com',
-        //     'password' => bcrypt('123456'),
-        // ]);
+        User::factory()->create([
+            'name' => 'admin User',
+            'email' => 'admin@admin.com',
+            'password' => bcrypt('123456'),
+        ]);
 
         $this->call([
             StoreSeeder::class,
@@ -29,8 +29,8 @@ class DatabaseSeeder extends Seeder
             // BankBalanceSeeder::class,
             CountrySeeder::class,
             MeasurementUnitSeeder::class,
-            // ProviderSeeder::class,
-            // BrandCategoryProductSeeder::class,
+            ProviderSeeder::class,
+            BrandCategorySeeder::class,
             // Comex\ComexImportOrderSeeder::class,
             // Comex\ComexItemSeeder::class,        // Mover ItemSeeder antes de Container y Document
             // ComexShippingLineSeeder::class,
@@ -38,7 +38,7 @@ class DatabaseSeeder extends Seeder
             // Comex\ComexDocumentSeeder::class,
             // Comex\ComexDocumentPaymentSeeder::class,
             // Comex\ComexExpenseSeeder::class,
-            // ProductAttributeSeeder::class,
+            ProductSeeder::class,
             // EventSeeder::class,
         ]);
     }

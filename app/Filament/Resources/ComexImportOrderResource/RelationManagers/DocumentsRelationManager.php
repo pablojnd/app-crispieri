@@ -62,7 +62,7 @@ class DocumentsRelationManager extends RelationManager
                                             ->label('FOB')
                                             ->numeric()
                                             ->required()
-                                            ->live()
+                                            ->live(onBlur: true)
                                             ->default(0)
                                             ->afterStateUpdated(function ($state, Forms\Set $set) {
                                                 $set('insurance_total', round($state * 0.02, 4));

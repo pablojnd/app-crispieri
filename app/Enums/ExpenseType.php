@@ -24,7 +24,7 @@ enum ExpenseType: string implements HasLabel, HasColor, HasIcon
     public function getLabel(): string
     {
         return match ($this) {
-            self::GATE_IN => 'Entrada',
+            self::GATE_IN => 'GATE IN',
             self::THC => 'THC',
             self::MANIFEST_OPENING => 'Apertura de Manifiesto',
             self::GUARANTEE => 'Garantía',
