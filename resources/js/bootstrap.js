@@ -3,4 +3,3 @@ window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
-// ...your bootstrap code if needed...
