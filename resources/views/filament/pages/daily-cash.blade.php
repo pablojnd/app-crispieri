@@ -53,6 +53,7 @@
                     <div class="flex justify-between items-center">
                         <span class="text-xs text-gray-500">Total:</span>
                         <span class="text-lg font-bold text-primary-600">${{ number_format($ventasData['facturas']['MontoTotalFacturas'] ?? 0, 0, ',', '.') }}</span>
+                        <span class="text-lg font-bold text-primary-600">${{ number_format($ventasData['facturas']['MontoTotalFacturas'] ?? 0, 0, ',', '.') }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-xs text-gray-500">Nulas:</span>

@@ -307,8 +307,8 @@ class ProductResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('sku')
-                    ->label(__('SKU'))
+                Tables\Columns\TextColumn::make('code')
+                    ->label(__('Código'))
                     ->searchable()
                     ->sortable(),
 
