@@ -4,10 +4,12 @@ namespace App\Models;
 
 use BinaryCats\Sku\HasSku;
 use Spatie\Sluggable\HasSlug;
+use Filament\Facades\Filament;
 use Spatie\Sluggable\SlugOptions;
 use BinaryCats\Sku\Concerns\SkuOptions;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Concerns\HasStoreTenancy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -136,5 +138,32 @@ class Product extends Model
         return Attribute::make(
             set: fn(string $value) => strtoupper($value),
         );
+    }
+
+    /**
+     * Get formatted label for display in selects and lists
+     */
+    public function getFormattedLabel(): string
+    {
+        return "{$this->product_name} [{$this->code}]";
+    }
+
+    /**
+     * Get search results for select fields
+     */
+    public static function getSelectSearchResults(string $search): array
+    {
+        return static::query()
+            ->whereBelongsTo(Filament::getTenant())
+            ->where(function ($query) use ($search) {
+                $query->where('product_name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            })
+            ->limit(50)
+            ->get()
+            ->mapWithKeys(fn(Product $product): array => [
+                $product->id => $product->getFormattedLabel()
+            ])
+            ->toArray();
     }
 }

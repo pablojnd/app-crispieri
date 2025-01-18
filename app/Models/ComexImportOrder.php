@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentStatus;
 use App\Enums\TransportType;
 use Filament\Facades\Filament;
 use App\Enums\ImportOrderStatus;
@@ -135,14 +136,39 @@ class ComexImportOrder extends Model
 
     public static function getTotalExpenses()
     {
-        return self::query()
+        $query = self::query()
             ->where('store_id', Filament::getTenant()->id)
             ->whereNotIn('status', [
                 ImportOrderStatus::CANCELLED,
                 ImportOrderStatus::RECEIVED
-            ])
-            ->withSum('expenses', 'expense_amount')
+            ]);
+
+        // Suma de gastos pendientes y parcialmente pagados
+        $expensesSum = clone $query;
+        $totalExpenses = $expensesSum->withSum(['expenses' => function ($query) {
+            $query->whereIn('payment_status', [
+                PaymentStatus::PENDING->value,
+                PaymentStatus::PARTIALLY_PAID->value
+            ]);
+        }], 'expense_amount')
             ->get()
             ->sum('expenses_sum_expense_amount') ?? 0;
+
+        // Calcular pending_amount de documentos
+        $documentsSum = clone $query;
+        $documents = $documentsSum->with(['documents' => function ($query) {
+            $query->withSum('items', 'total_price')
+                ->withSum('payments', 'amount');
+        }])->get();
+
+        $totalPendingAmount = $documents->sum(function ($order) {
+            return $order->documents->sum(function ($document) {
+                $cifTotal = $document->cif_total;
+                $totalPaid = $document->payments_sum_amount ?? 0;
+                return max(0, $cifTotal - $totalPaid);
+            });
+        });
+
+        return $totalExpenses + $totalPendingAmount;
     }
 }

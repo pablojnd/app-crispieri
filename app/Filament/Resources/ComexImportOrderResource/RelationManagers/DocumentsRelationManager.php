@@ -100,12 +100,12 @@ class DocumentsRelationManager extends RelationManager
                                     ->label('Notas'),
 
                                 // Actualizar el select de estado de pago
-                                Forms\Components\Select::make('payment_status')
-                                    ->options(PaymentStatus::class) // Filament manejará automáticamente la conversión
-                                    ->default(PaymentStatus::PENDING)
-                                    ->disabled()
-                                    ->hiddenOn('create')
-                                    ->label('Estado de Pago'),
+                                // Forms\Components\Select::make('payment_status')
+                                //     ->options(PaymentStatus::class) // Filament manejará automáticamente la conversión
+                                //     ->default(PaymentStatus::PENDING)
+                                //     // ->disabled()
+                                //     // ->hiddenOn('create')
+                                // ->label('Estado de Pago'),
                             ])->columns(3),
 
                         Tabs\Tab::make('Pagos')

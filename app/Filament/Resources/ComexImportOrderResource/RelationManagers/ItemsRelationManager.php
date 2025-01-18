@@ -4,10 +4,12 @@ namespace App\Filament\Resources\ComexImportOrderResource\RelationManagers;
 
 use Filament\Forms;
 use Filament\Tables;
+use App\Models\Product;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Forms\Form;
 use App\Models\Attribute;
+use App\Models\ComexItem;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
 use App\Models\AttributeValue;
@@ -39,14 +41,13 @@ class ItemsRelationManager extends RelationManager
                     ->relationship(
                         name: 'product',
                         titleAttribute: 'product_name',
-                        modifyQueryUsing: fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant()),
+                        modifyQueryUsing: fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant())
                     )
-                    ->searchable(['product_name', 'sku'])
+                    ->searchable(['product_name', 'code'])
                     ->preload()
+                    // ->getSearchResultsUsing(fn(string $search): array => Product::getSelectSearchResults($search))
+                    ->getOptionLabelUsing(fn($value): ?string => Product::find($value)?->getFormattedLabel())
                     ->required()
-                    ->createOptionForm(function () {
-                        return static::getProductsFormSchema();
-                    })
                     ->label('Producto')
                     ->columnSpan(3),
 
