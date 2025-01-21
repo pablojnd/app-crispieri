@@ -43,6 +43,7 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 // Widgets\AccountWidget::class,
                 \App\Filament\Widgets\MyCalendarWidget::class,
+                // Widgets\MyCalendarWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -54,6 +55,7 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                // \App\Http\Middleware\SecurityHeadersMiddleware::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

@@ -18,12 +18,15 @@ use Filament\Forms\Components\DateTimePicker;
 
 class MyCalendarWidget extends CalendarWidget
 {
+    protected static ?int $sort = 1;
+
     // Habilitar interacciones del calendario
     protected bool $eventClickEnabled = true;
     protected bool $eventDragEnabled = true;
     protected bool $eventResizeEnabled = true;
     protected bool $dateClickEnabled = true;
     protected bool $dateSelectEnabled = true;
+    protected ?string $defaultEventClickAction = 'view';
 
     // Obtener eventos
     public function getEvents(array $fetchInfo = []): Collection|array
@@ -46,14 +49,9 @@ class MyCalendarWidget extends CalendarWidget
                 ->label('Descripción'),
             DateTimePicker::make('start_at')
                 ->required()
-                ->label('Inicio')
-                ->timezone('America/La_Paz')
-                ->default(now()),
+                ->label('Inicio'),
             DateTimePicker::make('end_at')
-                ->required()
-                ->label('Fin')
-                ->timezone('America/La_Paz')
-                ->default(fn() => now()->addHour()),
+                ->label('Fin'),
         ];
     }
 
@@ -86,25 +84,35 @@ class MyCalendarWidget extends CalendarWidget
             ViewAction::make()
                 ->form($this->getFormSchema())
                 ->modalWidth('lg')
-                ->record(function ($arguments) {
-                    return Event::find($arguments['id']);
+                ->record(function (array $arguments) {
+                    // Usar el argumento correcto para obtener el ID
+                    return Event::find($this->getEventRecord()?->id);
                 }),
             EditAction::make()
                 ->form($this->getFormSchema())
                 ->modalWidth('lg')
-                ->record(function ($arguments) {
-                    return Event::find($arguments['id']);
+                ->record(function (array $arguments) {
+                    return Event::find($this->getEventRecord()?->id);
+                })
+                ->mutateRecordDataUsing(function (array $data) {
+                    return [
+                        'title' => $data['title'],
+                        'description' => $data['description'],
+                        'start_at' => $data['start_at'],
+                        'end_at' => $data['end_at'],
+                        'store_id' => Filament::getTenant()->id,
+                    ];
                 })
                 ->after(function () {
                     $this->dispatch('calendar-event-updated');
                 }),
-            // DeleteAction::make()
-            //     ->record(function ($arguments) {
-            //         return Event::find($arguments['id']);
-            //     })
-            //     ->after(function () {
-            //         $this->dispatch('calendar-event-updated');
-            //     }),
+            DeleteAction::make()
+                ->record(function (array $arguments) {
+                    return Event::find($this->getEventRecord()?->id);
+                })
+                ->after(function () {
+                    $this->dispatch('calendar-event-updated');
+                }),
         ];
     }
 
@@ -135,15 +143,15 @@ class MyCalendarWidget extends CalendarWidget
     // Manejar eventos de arrastrar y soltar
     public function onEventDrop(array $info = []): bool
     {
-        $event = Event::find($info['event']['id']);
+        $event = $this->getEventRecord();
 
         if (!$event) {
             return false;
         }
 
         $event->update([
-            'start_at' => $info['event']['start'],
-            'end_at' => $info['event']['end'],
+            'start_at' => $info['start'] ?? null,
+            'end_at' => $info['end'] ?? null,
         ]);
 
         $this->dispatch('calendar-event-updated');
@@ -153,14 +161,14 @@ class MyCalendarWidget extends CalendarWidget
     // Manejar eventos de redimensionamiento
     public function onEventResize(array $info = []): bool
     {
-        $event = Event::find($info['event']['id']);
+        $event = $this->getEventRecord();
 
         if (!$event) {
             return false;
         }
 
         $event->update([
-            'end_at' => $info['event']['end'],
+            'end_at' => $info['end'] ?? null,
         ]);
 
         $this->dispatch('calendar-event-updated');
@@ -169,6 +177,23 @@ class MyCalendarWidget extends CalendarWidget
 
     protected function getIdentifiableKey(): ?string
     {
-        return 'my-calendar-widget';
+        return 'calendar';
+    }
+
+    public function toEvent(): array
+    {
+        return [
+            'id' => $this->id,
+            'title' => $this->title,
+            'start' => $this->start_at->format('Y-m-d\TH:i:s'),
+            'end' => $this->end_at?->format('Y-m-d\TH:i:s'),
+            'allDay' => false,
+            'editable' => true,
+            'backgroundColor' => '#4a5568', // Color por defecto
+            'textColor' => '#ffffff',
+            'extendedProps' => [
+                'description' => $this->description,
+            ],
+        ];
     }
 }

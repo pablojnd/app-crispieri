@@ -118,6 +118,27 @@ class ShippingLineRelationManager extends RelationManager
                                     ->collapsible()
                                     ->itemLabel(fn(array $state): ?string => $state['container_number'] ?? null)
                             ]),
+                        Forms\Components\Tabs\Tab::make('Eventos')
+                            ->schema([
+                                Forms\Components\Fieldset::make('Evento')
+                                    ->relationship('events')
+                                    ->schema([
+                                        Forms\Components\TextInput::make('title')
+                                            ->label('Título')
+                                            ->required(),
+                                        Forms\Components\Textarea::make('description')
+                                            ->label('Descripción'),
+                                        Forms\Components\DateTimePicker::make('start_at')
+                                            ->label('Fecha y hora de inicio')
+                                            ->required(),
+                                        Forms\Components\DateTimePicker::make('end_at')
+                                            ->label('Fecha y hora de fin'),
+                                    ])->columns(2)
+                                    ->mutateRelationshipDataBeforeCreateUsing(function (array $data) {
+                                        $data['store_id'] = Filament::getTenant()->id;
+                                        return $data;
+                                    }),
+                            ]),
                     ])
                     ->columnSpanFull()
             ]);

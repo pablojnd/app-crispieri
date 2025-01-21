@@ -57,4 +57,9 @@ class ComexShippingLineContainer extends Model
     {
         return $this->hasMany(ComexContainer::class, 'comex_shipping_line_container_id');
     }
+
+    public function events()
+    {
+        return $this->hasOne(Event::class, 'shipping_line_container_id');
+    }
 }

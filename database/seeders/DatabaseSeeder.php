@@ -23,14 +23,14 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             StoreSeeder::class,
-            CurrencySeeder::class,
+            // CurrencySeeder::class,
             // BankCodeSeeder::class,
             // BankSeeder::class,
             // BankBalanceSeeder::class,
-            CountrySeeder::class,
-            MeasurementUnitSeeder::class,
-            ProviderSeeder::class,
-            BrandCategorySeeder::class,
+            // CountrySeeder::class,
+            // MeasurementUnitSeeder::class,
+            // ProviderSeeder::class,
+            // BrandCategorySeeder::class,
             // Comex\ComexImportOrderSeeder::class,
             // Comex\ComexItemSeeder::class,        // Mover ItemSeeder antes de Container y Document
             // ComexShippingLineSeeder::class,
@@ -38,7 +38,7 @@ class DatabaseSeeder extends Seeder
             // Comex\ComexDocumentSeeder::class,
             // Comex\ComexDocumentPaymentSeeder::class,
             // Comex\ComexExpenseSeeder::class,
-            ProductSeeder::class,
+            // ProductSeeder::class,
             // EventSeeder::class,
         ]);
     }

@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('events', function (Blueprint $table) {
             $table->id();
             $table->foreignId('store_id')->constrained()->onDelete('cascade'); // Relación con el tenant
+            $table->foreignId('shipping_line_container_id')->nullable()->constrained('comex_shipping_line_containers')->onDelete('cascade'); // Relación con ComexShippingLineContainer
             $table->string('title'); // Título del evento
             $table->text('description')->nullable(); // Descripción opcional
             $table->timestamp('start_at'); // Inicio del evento

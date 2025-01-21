@@ -322,11 +322,11 @@ class ComexImportOrderResource extends Resource
                     ->maxLength(255)
                     ->helperText('Nombre oficial de la moneda'),
 
-                Forms\Components\TextInput::make('region')
-                    ->label('Región')
-                    ->placeholder('Ej: Región Metropolitana')
+                Forms\Components\TextInput::make('country_code')
+                    ->label('Código de País')
+                    ->placeholder('Ej: CL')
                     ->maxLength(255)
-                    ->helperText('Región geográfica del país'),
+                    ->helperText('Código de país según ISO 3166-1 alpha-2'),
 
                 Forms\Components\Select::make('currency_id')
                     ->label('Código de Moneda')

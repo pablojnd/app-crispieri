@@ -14,6 +14,7 @@ class Event extends Model implements Eventable
 
     protected $fillable = [
         'store_id',
+        'shipping_line_container_id',
         'title',
         'description',
         'start_at',
@@ -28,15 +29,22 @@ class Event extends Model implements Eventable
     public function toEvent(): array
     {
         return [
-            'id' => $this->id,
+            'id' => $this->id, // Cambiar a número en lugar de string
             'title' => $this->title,
-            'start' => $this->start_at->format('Y-m-d H:i:s'),
-            'end' => $this->end_at?->format('Y-m-d H:i:s'),
+            'start' => $this->start_at->format('Y-m-d\TH:i:s'),
+            'end' => $this->end_at?->format('Y-m-d\TH:i:s'),
             'allDay' => false,
             'editable' => true,
+            'backgroundColor' => '#4a5568',
+            'textColor' => '#ffffff',
             'extendedProps' => [
                 'description' => $this->description,
             ],
         ];
+    }
+
+    public function shippingLineContainer()
+    {
+        return $this->belongsTo(ComexShippingLineContainer::class, 'shipping_line_container_id');
     }
 }

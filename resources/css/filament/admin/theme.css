@@ -1,0 +1,21 @@
+@import '/vendor/filament/filament/resources/css/theme.css';
+
+@config 'tailwind.config.js';
+
+/* @import '../../../../vendor/filament/filament/resources/css/theme.css'; */
+
+/* Estilos personalizados para el calendario */
+.calendar-widget {
+    height: 700px;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.fc-event {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.fc-event:hover {
+    filter: brightness(0.9);
+}
