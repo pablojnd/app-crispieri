@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\PaymentStatus;
+use App\Enums\DocumentStatus;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Concerns\HasStoreTenancy;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -23,6 +24,7 @@ class ComexDocument extends Model
         'document_type',
         'document_clause',
         'document_date',
+        'document_status',
         'fob_total',
         'freight_total',
         'insurance_total',
@@ -36,6 +38,7 @@ class ComexDocument extends Model
     protected $casts = [
         'document_type' => DocumentType::class,
         'document_clause' => DocumentClauseType::class,
+        'document_status' => DocumentStatus::class,
         'document_date' => 'date',
         'fob_total' => 'decimal:4',
         'freight_total' => 'decimal:4',

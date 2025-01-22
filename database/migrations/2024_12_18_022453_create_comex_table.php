@@ -55,14 +55,13 @@ return new class extends Migration
             $table->decimal('fob_total', 15, 4)->default(0.00)->comment('Total FOB del documento');
             $table->decimal('freight_total', 15, 4)->default(0.00)->comment('Total de flete del documento');
             $table->decimal('insurance_total', 15, 4)->default(0.00)->comment('Total de seguro del documento');
-            $table->decimal('cif_total', 15, 4)->storedAs('fob_total + freight_total + insurance_total')
-                ->comment('Total CIF calculado (FOB + Flete + Seguro)');
+            $table->decimal('cif_total', 15, 4)->storedAs('fob_total + freight_total + insurance_total')->comment('Total CIF calculado (FOB + Flete + Seguro)');
             $table->decimal('factor', 15, 9)->default(0)->comment('Factor calculado (CIF Total/suma de precios)');
-            $table->decimal('total_paid', 15, 4)->default(0)
-                ->comment('Monto total pagado');
+            $table->decimal('total_paid', 15, 4)->default(0)->comment('Monto total pagado');
             $table->decimal('pending_amount', 15, 4)->default(0)->comment('Monto pendiente de pago');
             $table->string('currency_code', 3)->default('USD')->comment('Moneda del documento');
             $table->text('notes')->nullable()->comment('Notas adicionales');
+            $table->enum('document_status', ['in_transit', 'received', 'finish'])->default('in_transit')->comment('Estado del documento');
             // $table->enum('payment_status', ['unpaid', 'partially_paid', 'paid'])->default('unpaid')->comment('Estado del pago (gestionado por el modelo)');
             $table->timestamps();
             $table->softDeletes();

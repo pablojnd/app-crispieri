@@ -12,6 +12,7 @@ use Filament\Resources\Resource;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ComexImportOrderExport;
 use Illuminate\Database\Eloquent\Builder;
+use App\Exports\ComexImportOrderSimpleExport;
 use App\Enums\{TransportType, ImportOrderStatus};
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\ComexImportOrderResource\Pages;
@@ -169,12 +170,12 @@ class ComexImportOrderResource extends Resource
                         ->action(function (ComexImportOrder $record) {
                             return Excel::download(new ComexImportOrderExport($record), 'Orden_importacion_' . $record->reference_number . '.xlsx');
                         }),
-                    // Tables\Actions\Action::make('exportExcelBodega')
-                    //     ->label('Exportar Excel Bodega')
-                    //     ->icon('heroicon-o-clipboard-document-check')
-                    //     ->action(function (ComexImportOrder $record) {
-                    //         return Excel::download(new ComexImportOrderExport($record), 'Ordern_bodega.xlsx');
-                    //     }),
+                    Tables\Actions\Action::make('exportExcelBodega')
+                        ->label('Exportar Excel Bodega')
+                        ->icon('heroicon-o-clipboard-document-check')
+                        ->action(function (ComexImportOrder $record) {
+                            return Excel::download(new ComexImportOrderSimpleExport($record), 'Ordern_bodega.xlsx_' . $record->reference_number . '.xlsx');
+                        }),
                 ]),
             ])
             ->bulkActions([

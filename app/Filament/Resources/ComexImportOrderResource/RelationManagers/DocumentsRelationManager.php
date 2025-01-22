@@ -10,6 +10,7 @@ use Filament\Tables\Table;
 use App\Enums\DocumentType;
 use App\Enums\PaymentStatus;
 use App\Enums\DocumentClauseType;
+use App\Enums\DocumentStatus;
 use Filament\Forms\Components\Tabs;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,9 +48,21 @@ class DocumentsRelationManager extends RelationManager
                                     ->label('Tipo'),
 
                                 Forms\Components\Select::make('document_clause')
-                                    ->options(DocumentClauseType::class)
+                                    ->live()
+                                    // ->options(DocumentClauseType::class)
+                                    ->options([
+                                        'fob' => 'FOB',
+                                        'cost_and_freight' => 'Costo y Flete',
+                                        'cif' => 'CIF',
+                                    ])
                                     ->required()
                                     ->label('Cláusula'),
+
+                                Forms\Components\Select::make('document_status')
+                                    ->options(DocumentStatus::class)
+                                    ->required()
+                                    ->default(DocumentStatus::IN_TRANSIT)
+                                    ->label('Estado'),
 
                                 Forms\Components\DatePicker::make('document_date')
                                     ->required()
@@ -64,22 +77,38 @@ class DocumentsRelationManager extends RelationManager
                                             ->required()
                                             ->live(onBlur: true)
                                             ->default(0)
-                                            ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                                $set('insurance_total', round($state * 0.02, 4));
+                                            ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                                                if ($get('document_clause') !== 'fob') {
+                                                    $set('insurance_total', round($state * 0.02, 4));
+                                                }
                                             }),
 
                                         Forms\Components\TextInput::make('freight_total')
                                             ->numeric()
-                                            ->required()
+                                            ->required(
+                                                fn(Forms\Get $get): bool =>
+                                                $get('document_clause') !== 'fob'
+                                            )
                                             ->default(0)
-                                            ->label('Flete'),
+                                            ->label('Flete')
+                                            ->visible(
+                                                fn(Forms\Get $get): bool =>
+                                                $get('document_clause') !== 'fob'
+                                            ),
 
                                         Forms\Components\TextInput::make('insurance_total')
                                             ->numeric()
-                                            ->required()
+                                            ->required(
+                                                fn(Forms\Get $get): bool =>
+                                                $get('document_clause') !== 'fob'
+                                            )
                                             ->default(0)
                                             ->label('Seguro')
-                                            ->helperText('2% del FOB por defecto'),
+                                            ->helperText('2% del FOB por defecto')
+                                            ->visible(
+                                                fn(Forms\Get $get): bool =>
+                                                $get('document_clause') !== 'fob'
+                                            ),
 
                                         Forms\Components\TextInput::make('cif_total')
                                             ->numeric()
@@ -92,12 +121,13 @@ class DocumentsRelationManager extends RelationManager
                                             ->readOnly()
                                             ->visibleOn('view', 'edit')
                                             ->label('Factor'),
-                                    ]),
+                                    ])->columnSpanFull(),
 
                                 Forms\Components\Textarea::make('notes')
                                     ->maxLength(500)
                                     ->columnSpanFull()
                                     ->label('Notas'),
+
 
                                 // Actualizar el select de estado de pago
                                 // Forms\Components\Select::make('payment_status')
@@ -106,7 +136,7 @@ class DocumentsRelationManager extends RelationManager
                                 //     // ->disabled()
                                 //     // ->hiddenOn('create')
                                 // ->label('Estado de Pago'),
-                            ])->columns(3),
+                            ])->columns(4),
 
                         Tabs\Tab::make('Pagos')
                             ->schema([
@@ -296,6 +326,12 @@ class DocumentsRelationManager extends RelationManager
                     ->tooltip(fn($record) => $record->items_tooltip)
                     ->badge()
                     ->alignCenter(),
+
+                Tables\Columns\TextColumn::make('document_status')
+                    ->badge()
+                    ->sortable()
+                    ->label('Estado')
+                    ->searchable(),
             ])
             ->defaultSort('document_date', 'desc')
             ->filters([
@@ -311,7 +347,7 @@ class DocumentsRelationManager extends RelationManager
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\ViewAction::make(),
+                    // Tables\Actions\ViewAction::make(),
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\DeleteAction::make(),
                 ]),

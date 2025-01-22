@@ -134,14 +134,19 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
         $this->record = $record;
     }
 
-    private function formatNumber($number, $decimals = 2): string
+    private function formatNumber($number, $decimals = 2): float
     {
-        return number_format($number, $decimals, ',', '.');
+        return round(floatval($number), $decimals);
     }
 
     private function getColumnIndexes(): array
     {
         $baseIndex = 0;
+
+        // Calcular el índice total_general correctamente
+        $expenseCount = count(ExpenseType::cases());
+        $totalGeneralIndex = 31 + ($expenseCount * 3); // 31 columnas base + (cantidad de tipos de gastos * 3 columnas por gasto)
+
         return [
             'base' => [
                 'store' => $baseIndex++,         // 0
@@ -184,8 +189,8 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
                 'unit_price' => $baseIndex++,   // 29
                 'cif_unit' => $baseIndex++,     // 30
             ],
-            'expenses_start' => $baseIndex,     // 31
-            'total_general' => 67              // Última columna
+            'expenses_start' => 31,
+            'total_general' => $totalGeneralIndex
         ];
     }
 
@@ -196,12 +201,12 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
         // Documentos
         $docTotals = $order->documents->reduce(function ($carry, $doc) {
             return [
-                'fob' => $carry['fob'] + $doc->fob_total,
-                'freight' => $carry['freight'] + $doc->freight_total,
-                'insurance' => $carry['insurance'] + $doc->insurance_total,
-                'cif' => $carry['cif'] + $doc->cif_total,
-                'paid' => $carry['paid'] + $doc->total_paid,
-                'pending' => $carry['pending'] + $doc->pending_amount
+                'fob' => $carry['fob'] + floatval($doc->fob_total),
+                'freight' => $carry['freight'] + floatval($doc->freight_total),
+                'insurance' => $carry['insurance'] + floatval($doc->insurance_total),
+                'cif' => $carry['cif'] + floatval($doc->cif_total),
+                'paid' => $carry['paid'] + floatval($doc->total_paid),
+                'pending' => $carry['pending'] + floatval($doc->pending_amount)
             ];
         }, ['fob' => 0, 'freight' => 0, 'insurance' => 0, 'cif' => 0, 'paid' => 0, 'pending' => 0]);
 
@@ -214,10 +219,12 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
 
         // Items
         $itemTotals = $order->items->reduce(function ($carry, $item) {
+            $cifUnit = $item->cif_unit > 0 ? floatval($item->cif_unit) : (floatval($item->quantity) > 0 ? floatval($item->total_price) / floatval($item->quantity) : 0);
+
             return [
-                'quantity' => $carry['quantity'] + $item->quantity,
-                'total' => $carry['total'] + $item->total_price,
-                'cif' => $carry['cif'] + ($item->cif_unit * $item->quantity)
+                'quantity' => $carry['quantity'] + floatval($item->quantity),
+                'total' => $carry['total'] + floatval($item->total_price),
+                'cif' => $carry['cif'] + ($cifUnit * floatval($item->quantity))
             ];
         }, ['quantity' => 0, 'total' => 0, 'cif' => 0]);
 
@@ -240,6 +247,9 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
 
         // Total General (CIF + Gastos)
         $totalRow[$indexes['total_general']] = $this->formatNumber($docTotals['cif'] + $expenseTotal);
+
+        // Asegurarnos que la última columna (BP) esté vacía
+        $totalRow[] = '';
     }
 
     private function getData($order): array
@@ -279,13 +289,14 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
             $order->order_date?->format('d/m/Y'),
         ];
 
-        // Agregar primera naviera y sus datos
+        // Modificar la sección de primera naviera
         $firstShippingLineContainer = $order->comexShippingLineContainers->first();
         if ($firstShippingLineContainer) {
+            $event = $firstShippingLineContainer->events;
             $firstRow = array_merge($firstRow, [
                 $firstShippingLineContainer->shippingLine->name,
-                $firstShippingLineContainer->estimated_departure?->format('d/m/Y'),
-                $firstShippingLineContainer->estimated_arrival?->format('d/m/Y'),
+                $event?->start_at?->format('d/m/Y'),
+                $event?->end_at?->format('d/m/Y'),
             ]);
         } else {
             $firstRow = array_merge($firstRow, array_fill(0, 3, ''));
@@ -326,29 +337,35 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
         // Agregar primer item
         $firstItem = $order->items->first();
         if ($firstItem) {
+            $cifUnit = $firstItem->cif_unit > 0 ? floatval($firstItem->cif_unit) : (floatval($firstItem->quantity) > 0 ? floatval($firstItem->total_price) / floatval($firstItem->quantity) : 0);
+
             $firstRow = array_merge($firstRow, [
                 $firstItem->product?->product_name ?? 'N/A',
                 $firstItem->package_quality,
-                $this->formatNumber($firstItem->quantity, 2),
-                $this->formatNumber($firstItem->total_price, 4),
-                $this->formatNumber($firstItem->unit_price, 4),
-                $this->formatNumber($firstItem->cif_unit, 4),
+                $this->formatNumber(floatval($firstItem->quantity), 2),
+                $this->formatNumber(floatval($firstItem->total_price), 4),
+                $this->formatNumber(floatval($firstItem->unit_price), 4),
+                $this->formatNumber($cifUnit, 4),
             ]);
         } else {
             $firstRow = array_merge($firstRow, array_fill(0, 6, '')); // Espacios vacíos para item
         }
 
-        // Reemplazar la sección de gastos con columnas detalladas (sin columna total)
+        // Reemplazar la sección de gastos con columnas detalladas
         $expensesByType = $order->expenses->groupBy('expense_type');
+        $expensesStartIndex = 31; // Índice fijo donde empiezan los gastos
 
         foreach (ExpenseType::cases() as $expenseType) {
-            $expense = $expensesByType->get($expenseType->value)?->first();
-            if ($expense) {
-                $firstRow[] = $this->formatNumber($expense->expense_quantity, 2);
-                $firstRow[] = $this->formatNumber($expense->expense_amount, 2);
-                $firstRow[] = $expense->payment_status->getLabel();
+            $expenses = $expensesByType->get($expenseType->value);
+            $startIndex = $expensesStartIndex + ($expenseType->ordinal() * 3);
+
+            if ($expenses && $expenses->first()) {
+                $expense = $expenses->first();
+                $firstRow[$startIndex] = $this->formatNumber($expense->expense_quantity, 2);
+                $firstRow[$startIndex + 1] = $this->formatNumber($expense->expense_amount, 2);
+                $firstRow[$startIndex + 2] = $expense->payment_status->getLabel();
             } else {
-                $firstRow = array_merge($firstRow, array_fill(0, 3, ''));
+                array_splice($firstRow, $startIndex, 3, array_fill(0, 3, ''));
             }
         }
 
@@ -358,71 +375,74 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
 
         // Filas adicionales
         for ($i = 1; $i < $maxRows; $i++) {
-            $row = array_fill(0, count($this->getFlattenedColumns()), ''); // Inicializar fila vacía
+            $row = array_fill(0, count($this->getFlattenedColumns()) + 1, ''); // +1 para la columna extra
 
             // Agregar item adicional si existe
             if ($i < $maxItems) {
                 $item = $order->items[$i];
-                $itemData = [
-                    $item->product?->product_name ?? 'N/A',
-                    $item->package_quality,
-                    $this->formatNumber($item->quantity, 2),
-                    $this->formatNumber($item->total_price, 4),
-                    $this->formatNumber($item->unit_price, 4),
-                    $this->formatNumber($item->cif_unit, 4),
-                ];
-                // Corregir el índice para los items (26 es el índice después de los documentos)
-                array_splice($row, 26, 6, $itemData);
+                $cifUnit = $item->cif_unit > 0 ? floatval($item->cif_unit) : (floatval($item->quantity) > 0 ? floatval($item->total_price) / floatval($item->quantity) : 0);
+
+                // Usar los índices correctos del array
+                $row[25] = $item->product?->product_name ?? 'N/A';
+                $row[26] = $item->package_quality;
+                $row[27] = $this->formatNumber(floatval($item->quantity), 2);
+                $row[28] = $this->formatNumber(floatval($item->total_price), 4);
+                $row[29] = $this->formatNumber(floatval($item->unit_price), 4);
+                $row[30] = $this->formatNumber($cifUnit, 4);
             }
 
             // Agregar datos de naviera y contenedor adicional si existe
             if ($i < $maxShippingLineContainers) {
                 $shippingLineContainer = $order->comexShippingLineContainers[$i];
-                array_splice($row, 9, 3, [
-                    $shippingLineContainer->shippingLine->name,
-                    $shippingLineContainer->estimated_departure?->format('d/m/Y'),
-                    $shippingLineContainer->estimated_arrival?->format('d/m/Y'),
-                ]);
+                $event = $shippingLineContainer->events;
+
+                // Usar asignación directa en lugar de array_splice
+                $row[8] = $shippingLineContainer->shippingLine->name;
+                $row[9] = $event?->start_at?->format('d/m/Y');
+                $row[10] = $event?->end_at?->format('d/m/Y');
 
                 // Agregar contenedor asociado
                 $container = $shippingLineContainer->containers->first();
                 if ($container) {
-                    array_splice($row, 12, 4, [
-                        $container->container_number,
-                        $container->type->getLabel(),
-                        $this->formatNumber($container->weight, 2),
-                        $this->formatNumber($container->cost, 2),
-                    ]);
+                    $row[11] = $container->container_number;
+                    $row[12] = $container->type->getLabel();
+                    $row[13] = $this->formatNumber($container->weight, 2);
+                    $row[14] = $this->formatNumber($container->cost, 2);
                 }
             }
 
             // Agregar documento adicional si existe
             if ($i < $maxDocs) {
                 $document = $order->documents[$i];
-                array_splice($row, 16, 10, [
-                    $document->document_number,
-                    $document->document_type->getLabel(),
-                    $document->document_clause?->getLabel(),
-                    $this->formatNumber($document->fob_total, 2),
-                    $this->formatNumber($document->freight_total, 2),
-                    $this->formatNumber($document->insurance_total, 2),
-                    $this->formatNumber($document->cif_total, 2),
-                    $this->formatNumber($document->factor, 9),
-                    $this->formatNumber($document->total_paid, 2),
-                    $this->formatNumber($document->pending_amount, 2),
-                ]);
+                // Usar asignación directa en lugar de array_splice
+                $row[15] = $document->document_number;
+                $row[16] = $document->document_type->getLabel();
+                $row[17] = $document->document_clause?->getLabel();
+                $row[18] = $this->formatNumber($document->fob_total, 2);
+                $row[19] = $this->formatNumber($document->freight_total, 2);
+                $row[20] = $this->formatNumber($document->insurance_total, 2);
+                $row[21] = $this->formatNumber($document->cif_total, 2);
+                $row[22] = $this->formatNumber($document->factor, 9);
+                $row[23] = $this->formatNumber($document->total_paid, 2);
+                $row[24] = $this->formatNumber($document->pending_amount, 2);
             }
 
-            // Agregar gastos adicionales por tipo
+            // Modificar la sección de gastos
             foreach (ExpenseType::cases() as $expenseType) {
                 $expenses = $expensesByType->get($expenseType->value);
-                if ($expenses && isset($expenses[$i])) {
+                $startIndex = $expensesStartIndex + ($expenseType->ordinal() * 3);
+
+                // Obtener todos los gastos del mismo tipo
+                if ($expenses && $expenses->count() > $i) {
                     $expense = $expenses[$i];
-                    // El índice base 32 es después de los items (26 + 6 columnas de items)
-                    $startIndex = 32 + ($expenseType->ordinal() * 3);
                     $row[$startIndex] = $this->formatNumber($expense->expense_quantity, 2);
                     $row[$startIndex + 1] = $this->formatNumber($expense->expense_amount, 2);
                     $row[$startIndex + 2] = $expense->payment_status->getLabel();
+                } else {
+                    // Si no hay más gastos de este tipo, dejar las celdas vacías
+                    $row[$startIndex] = '';
+                    $row[$startIndex + 1] = '';
+                    $row[$startIndex + 2] = '';
                 }
             }
 
@@ -463,38 +483,38 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
     public function columnWidths(): array
     {
         $widths = [
-            'A' => 15,  // Tienda
+            'A' => 25,  // Tienda
             'B' => 20,  // Proveedor
             'C' => 20,  // País Origen
-            'D' => 15,  // Referencia
+            'D' => 25,  // Referencia
             'E' => 20,  // Ref. Externa
-            'F' => 15,  // Num. SVE
+            'F' => 25,  // Num. SVE
             'G' => 10,  // Tipo
-            'H' => 15,  // Estado
-            'I' => 15,  // Fecha Orden
+            'H' => 25,  // Estado
+            'I' => 25,  // Fecha Orden
             'J' => 20,  // Naviera
-            'K' => 15,  // Salida Est.
-            'L' => 15,  // Llegada Est.
+            'K' => 25,  // Salida Est.
+            'L' => 25,  // Llegada Est.
             'M' => 20,  // Num. Contenedor
             'N' => 20,  // Tipo Contenedor
-            'O' => 15,  // Peso (KG)
-            'P' => 15,  // Costo Flete
+            'O' => 25,  // Peso (KG)
+            'P' => 25,  // Costo Flete
             'Q' => 20,  // Num. Documento
-            'R' => 15,  // Tipo Doc.
-            'S' => 15,  // Clausula
-            'T' => 15,  // FOB
-            'U' => 15,  // Flete
-            'V' => 15,  // Seguro
-            'W' => 15,  // CIF
-            'X' => 15,  // Factor
-            'Y' => 15,  // Pagado
-            'Z' => 15,  // Pendiente
+            'R' => 25,  // Tipo Doc.
+            'S' => 25,  // Clausula
+            'T' => 25,  // FOB
+            'U' => 25,  // Flete
+            'V' => 25,  // Seguro
+            'W' => 25,  // CIF
+            'X' => 25,  // Factor
+            'Y' => 25,  // Pagado
+            'Z' => 25,  // Pendiente
             'AA' => 30, // Producto
-            'AB' => 15, // Bultos
-            'AC' => 15, // Cantidad
-            'AD' => 15, // Precio Total
-            'AE' => 15, // Precio Unitario
-            'AF' => 15, // CIF Unitario
+            'AB' => 25, // Bultos
+            'AC' => 25, // Cantidad
+            'AD' => 25, // Precio Total
+            'AE' => 25, // Precio Unitario
+            'AF' => 25, // CIF Unitario
         ];
 
         // Agregar anchos para las columnas de gastos
@@ -520,7 +540,8 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
 
     public function styles(Worksheet $sheet)
     {
-        $lastColumn = $this->getLastColumnLetter($sheet->getHighestColumn());
+        $lastColumn = 'BP'; // Columna fija
+        $totalGeneralColumn = 'BP'; // Columna fija para el total general
         $lastRow = $sheet->getHighestRow();
 
         return [
@@ -542,7 +563,7 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
             "T2:{$lastColumn}{$lastRow}" => [
                 'alignment' => ['horizontal' => 'right'],
             ],
-            // Estilo para la fila de totales y total general
+            // Estilo para la fila de totales
             $lastRow => [
                 'font' => ['bold' => true],
                 'fill' => [
@@ -550,7 +571,8 @@ class ComexImportOrderExport implements FromArray, WithHeadings, WithColumnWidth
                     'startColor' => ['rgb' => 'E6E6E6'],
                 ],
             ],
-            "{$lastColumn}{$lastRow}" => [
+            // Estilo específico para la celda del total general
+            "{$totalGeneralColumn}{$lastRow}" => [
                 'font' => ['bold' => true, 'size' => 12],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
