@@ -56,19 +56,31 @@ class ShippingLineRelationManager extends RelationManager
                                             ->label('Correo Electrónico')
                                             ->required(),
                                     ]),
+                                Forms\Components\Group::make()
+                                    ->relationship('events')
+                                    ->schema([
+                                        Forms\Components\DatePicker::make('start_at')
+                                            ->label('Fecha Estimada de Salida')
+                                            ->required(),
+                                        Forms\Components\DatePicker::make('end_at')
+                                            ->label('Fecha Estimada de Llegada'),
+                                        Forms\Components\Textarea::make('description')
+                                            ->label('Descripción')
+                                            ->columnSpanFull()
+                                    ])->columns(2)
+                                    ->columnSpanFull()
+                                    ->mutateRelationshipDataBeforeCreateUsing(function (array $data) use ($form): array {
+                                        $shippingLine = $form->getRecord()?->shippingLine;
+                                        $containerCount = $form->getRecord()?->containers->count() ?? 0;
 
-                                Forms\Components\DatePicker::make('estimated_departure')
-                                    ->label('Fecha Estimada de Salida'),
-                                Forms\Components\DatePicker::make('actual_departure')
-                                    ->label('Fecha Real de Salida'),
-                                Forms\Components\DatePicker::make('estimated_arrival')
-                                    ->label('Fecha Estimada de Llegada'),
-                                Forms\Components\DatePicker::make('actual_arrival')
-                                    ->label('Fecha Real de Llegada'),
-                                Forms\Components\Textarea::make('notes')
-                                    ->label('Notas')
-                                    ->maxLength(65535)
-                                    ->columnSpanFull(),
+                                        return [
+                                            'store_id' => Filament::getTenant()->id,
+                                            'title' => "{$this->getOwnerRecord()->provider->name} | {$shippingLine?->name} | {$containerCount} contenedores",
+                                            'description' => $data['description'] ?? null,
+                                            'start_at' => $data['start_at'],
+                                            'end_at' => $data['end_at'] ?? null,
+                                        ];
+                                    }),
                             ])->columns(3),
                         Forms\Components\Tabs\Tab::make('Contenedores')
                             ->schema([
@@ -118,27 +130,28 @@ class ShippingLineRelationManager extends RelationManager
                                     ->collapsible()
                                     ->itemLabel(fn(array $state): ?string => $state['container_number'] ?? null)
                             ]),
-                        Forms\Components\Tabs\Tab::make('Eventos')
-                            ->schema([
-                                Forms\Components\Fieldset::make('Evento')
-                                    ->relationship('events')
-                                    ->schema([
-                                        Forms\Components\TextInput::make('title')
-                                            ->label('Título')
-                                            ->required(),
-                                        Forms\Components\Textarea::make('description')
-                                            ->label('Descripción'),
-                                        Forms\Components\DateTimePicker::make('start_at')
-                                            ->label('Fecha y hora de inicio')
-                                            ->required(),
-                                        Forms\Components\DateTimePicker::make('end_at')
-                                            ->label('Fecha y hora de fin'),
-                                    ])->columns(2)
-                                    ->mutateRelationshipDataBeforeCreateUsing(function (array $data) {
-                                        $data['store_id'] = Filament::getTenant()->id;
-                                        return $data;
-                                    }),
-                            ]),
+                        // Forms\Components\Tabs\Tab::make('Eventos')
+                        //     ->schema([
+                        //         Forms\Components\Fieldset::make('Evento')
+                        //             ->relationship('events')
+                        //             ->schema([
+                        //                 Forms\Components\TextInput::make('title')
+                        //                     ->label('Título')
+                        //                     ->required(),
+                        //                 Forms\Components\Textarea::make('description')
+                        //                     ->label('Descripción'),
+                        //                 Forms\Components\DateTimePicker::make('start_at')
+                        //                     ->label('Fecha y hora de inicio')
+                        //                     ->required(),
+                        //                 Forms\Components\DateTimePicker::make('end_at')
+                        //                     ->label('Fecha y hora de fin'),
+                        //             ])->columns(2)
+                        //             ->mutateRelationshipDataBeforeCreateUsing(function (array $data) {
+                        //                 $data['store_id'] = Filament::getTenant()->id;
+                        //                 $data['title'] = $data['title'] ?? 'Evento de Contenedor';
+                        //                 return $data;
+                        //             }),
+                        //     ]),
                     ])
                     ->columnSpanFull()
             ]);

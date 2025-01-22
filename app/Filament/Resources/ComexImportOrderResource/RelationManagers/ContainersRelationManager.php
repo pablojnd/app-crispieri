@@ -118,23 +118,6 @@ class ContainersRelationManager extends RelationManager
                                 ->columnSpanFull()
                                 ->label('Notas'),
                         ])->columns(2),
-                    Forms\Components\Tabs\Tab::make('Eventos')
-                        ->schema([
-                            Forms\Components\Fieldset::make('Evento de Container')
-                                ->relationship('events')
-                                ->schema([
-                                    Forms\Components\TextInput::make('title')
-                                        ->label('Título')
-                                        ->required(),
-                                    Forms\Components\Textarea::make('description')
-                                        ->label('Descripción'),
-                                    Forms\Components\DateTimePicker::make('start_at')
-                                        ->label('Fecha y hora de inicio')
-                                        ->required(),
-                                    Forms\Components\DateTimePicker::make('end_at')
-                                        ->label('Fecha y hora de fin'),
-                                ])->columns(2),
-                        ]),
                 ])->columnSpanFull()
         ]);
     }

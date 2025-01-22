@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('external_reference')->nullable()->comment('Número de referencia externo proporcionado por el proveedor');
             $table->string('sve_registration_number')->nullable()->comment('Número de registro en el Sistema de Verificación de Exportaciones');
             $table->enum('type', ['air', 'sea', 'land'])->default('sea')->comment('Tipo de transporte: aéreo, marítimo o terrestre');
-            $table->enum('status', ['draft', 'confirmed', 'in_transit', 'in_customs', 'in_zofri', 'received', 'cancelled'])
+            $table->enum('status', ['draft', 'confirmed', 'in_transit', 'in_customs', 'galpon', 'received', 'finish', 'cancelled'])
                 ->default('draft')
                 ->comment('Estado actual de la orden de importación');
             $table->date('order_date')->comment('Fecha en que se realizó la orden');
