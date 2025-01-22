@@ -12,6 +12,7 @@ use Filament\Support\Enums\MaxWidth;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Resources\RelationManagers\RelationManager;
+use Illuminate\Validation\Rules\Unique;
 
 class ShippingLineRelationManager extends RelationManager
 {
@@ -70,8 +71,21 @@ class ShippingLineRelationManager extends RelationManager
                                     ])->columns(2)
                                     ->columnSpanFull()
                                     ->mutateRelationshipDataBeforeCreateUsing(function (array $data) use ($form): array {
-                                        $shippingLine = $form->getRecord()?->shippingLine;
-                                        $containerCount = $form->getRecord()?->containers->count() ?? 0;
+                                        $record = $form->getRecord();
+                                        $shippingLine = $record?->shippingLine;
+
+                                        return [
+                                            'store_id' => Filament::getTenant()->id,
+                                            'title' => "{$this->getOwnerRecord()->provider->name} | {$shippingLine?->name} | 0 contenedores",
+                                            'description' => $data['description'] ?? null,
+                                            'start_at' => $data['start_at'],
+                                            'end_at' => $data['end_at'] ?? null,
+                                        ];
+                                    })
+                                    ->mutateRelationshipDataBeforeSaveUsing(function (array $data) use ($form): array {
+                                        $record = $form->getRecord();
+                                        $shippingLine = $record?->shippingLine;
+                                        $containerCount = $record?->containers->count() ?? 0;
 
                                         return [
                                             'store_id' => Filament::getTenant()->id,
@@ -90,7 +104,15 @@ class ShippingLineRelationManager extends RelationManager
                                         Forms\Components\TextInput::make('container_number')
                                             ->label('Número de Contenedor')
                                             ->required()
-                                            ->maxLength(255),
+                                            ->maxLength(255)
+                                            ->unique(
+                                                table: 'comex_containers',
+                                                column: 'container_number',
+                                                ignoreRecord: true,
+                                                modifyRuleUsing: function (Unique $rule) {
+                                                    return $rule->where('store_id', Filament::getTenant()->id);
+                                                }
+                                            ),
                                         Forms\Components\Select::make('type')
                                             ->label('Tipo de Contenedor')
                                             ->options(ContainerType::class)
@@ -110,15 +132,43 @@ class ShippingLineRelationManager extends RelationManager
                                             ->maxLength(65535)
                                             ->columnSpanFull(),
                                     ])
-                                    ->mutateRelationshipDataBeforeCreateUsing(function (array $data) {
+                                    ->mutateRelationshipDataBeforeCreateUsing(function (array $data) use ($form): array {
+                                        $record = $form->getRecord();
+                                        $data['store_id'] = Filament::getTenant()->id;
+                                        $data['import_order_id'] = $this->getOwnerRecord()->id;
+
+                                        // Actualizar el título del evento después de crear el contenedor
+                                        if ($event = $record?->events) {
+                                            $containerCount = ($record->containers()->count() ?? 0) + 1;
+                                            $event->update([
+                                                'title' => "{$this->getOwnerRecord()->provider->name} | {$record->shippingLine->name} | {$containerCount} contenedores"
+                                            ]);
+                                        }
+
+                                        return $data;
+                                    })
+                                    ->mutateRelationshipDataBeforeSaveUsing(function (array $data) use ($form): array {
+                                        $record = $form->getRecord();
+
+                                        // Actualizar el título del evento al guardar cambios en contenedores
+                                        if ($event = $record?->events) {
+                                            $containerCount = $record->containers()->count();
+                                            $event->update([
+                                                'title' => "{$this->getOwnerRecord()->provider->name} | {$record->shippingLine->name} | {$containerCount} contenedores"
+                                            ]);
+                                        }
+
                                         $data['store_id'] = Filament::getTenant()->id;
                                         $data['import_order_id'] = $this->getOwnerRecord()->id;
                                         return $data;
                                     })
-                                    ->mutateRelationshipDataBeforeSaveUsing(function (array $data) {
-                                        $data['store_id'] = Filament::getTenant()->id;
-                                        $data['import_order_id'] = $this->getOwnerRecord()->id;
-                                        return $data;
+                                    ->afterStateUpdated(function ($record) {
+                                        if ($record && $event = $record->events) {
+                                            $containerCount = $record->containers()->count();
+                                            $event->update([
+                                                'title' => "{$this->getOwnerRecord()->provider->name} | {$record->shippingLine->name} | {$containerCount} contenedores"
+                                            ]);
+                                        }
                                     })
                                     // ->collapsible()
                                     // ->reorderableWithButtons()
@@ -171,12 +221,12 @@ class ShippingLineRelationManager extends RelationManager
                     ->label('Contenedores')
                     ->listWithLineBreaks()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('estimated_departure')
+                Tables\Columns\TextColumn::make('events.start_at')
                     ->label('Fecha Est. Salida')
                     ->date()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('estimated_arrival')
+                Tables\Columns\TextColumn::make('events.end_at')
                     ->label('Fecha Est. Llegada')
                     ->date()
                     ->sortable(),
