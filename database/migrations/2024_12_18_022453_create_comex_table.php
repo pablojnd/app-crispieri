@@ -114,22 +114,14 @@ return new class extends Migration
 
         Schema::create('comex_shipping_line_containers', function (Blueprint $table) {
             $table->id('id')->comment('Identificador único del contenedor de naviera');
-            $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete()
-                ->comment('ID de la tienda asociada');
-            $table->foreignId('shipping_line_id')->constrained('comex_shipping_lines')->cascadeOnDelete()
-                ->comment('ID de la naviera que transporta el contenedor');
-            $table->foreignId('import_order_id')->nullable()->constrained('comex_import_orders')->cascadeOnDelete()
-                ->comment('ID de la orden de importación relacionada');
-            $table->date('estimated_departure')->nullable()
-                ->comment('Fecha estimada de salida del puerto de origen');
-            $table->date('actual_departure')->nullable()
-                ->comment('Fecha real de salida del puerto de origen');
-            $table->date('estimated_arrival')->nullable()
-                ->comment('Fecha estimada de llegada al puerto destino');
-            $table->date('actual_arrival')->nullable()
-                ->comment('Fecha real de llegada al puerto destino');
-            $table->text('notes')->nullable()
-                ->comment('Observaciones sobre el tránsito del contenedor');
+            $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete()->comment('ID de la tienda asociada');
+            $table->foreignId('shipping_line_id')->constrained('comex_shipping_lines')->cascadeOnDelete()->comment('ID de la naviera que transporta el contenedor');
+            $table->foreignId('import_order_id')->nullable()->constrained('comex_import_orders')->cascadeOnDelete()->comment('ID de la orden de importación relacionada');
+            $table->date('estimated_departure')->nullable()->comment('Fecha estimada de salida del puerto de origen');
+            $table->date('actual_departure')->nullable()->comment('Fecha real de salida del puerto de origen');
+            $table->date('estimated_arrival')->nullable()->comment('Fecha estimada de llegada al puerto destino');
+            $table->date('actual_arrival')->nullable()->comment('Fecha real de llegada al puerto destino');
+            $table->text('notes')->nullable()->comment('Observaciones sobre el tránsito del contenedor');
             $table->timestamps();
         });
 

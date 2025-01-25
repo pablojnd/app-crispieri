@@ -22,18 +22,18 @@ class ComexShippingLine extends Model
         'email',
         'status',
         'notes',
-        // 'estimated_departure',
+        'estimated_departure',
         // 'actual_departure',
         // 'estimated_arrival',
         // 'actual_arrival',
     ];
 
-    // protected $casts = [
-    //     'estimated_departure' => 'date',
-    //     'actual_departure' => 'date',
-    //     'estimated_arrival' => 'date',
-    //     'actual_arrival' => 'date',
-    // ];
+    protected $casts = [
+        'estimated_departure' => 'date',
+        // 'actual_departure' => 'date',
+        // 'estimated_arrival' => 'date',
+        // 'actual_arrival' => 'date',
+    ];
 
     public function store()
     {

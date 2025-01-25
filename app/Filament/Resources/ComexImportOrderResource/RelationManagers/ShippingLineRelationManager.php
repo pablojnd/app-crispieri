@@ -57,29 +57,35 @@ class ShippingLineRelationManager extends RelationManager
                                             ->label('Correo Electrónico')
                                             ->required(),
                                     ]),
+                                Forms\Components\DatePicker::make('estimated_departure')
+                                    ->label('Fecha Estimada de Salida')
+                                    ->required(),
                                 Forms\Components\Group::make()
                                     ->relationship('events')
                                     ->schema([
-                                        Forms\Components\DatePicker::make('start_at')
-                                            ->label('Fecha Estimada de Salida')
-                                            ->required(),
                                         Forms\Components\DatePicker::make('end_at')
-                                            ->label('Fecha Estimada de Llegada'),
+                                            ->label('Fecha Estimada de Llegada')
+                                            ->required()
+                                            ->columnSpan(1),
                                         Forms\Components\Textarea::make('description')
                                             ->label('Descripción')
                                             ->columnSpanFull()
-                                    ])->columns(2)
+                                    ])->columns(3)
                                     ->columnSpanFull()
                                     ->mutateRelationshipDataBeforeCreateUsing(function (array $data) use ($form): array {
                                         $record = $form->getRecord();
                                         $shippingLine = $record?->shippingLine;
 
+                                        // Calcular start_at 3 días antes del end_at
+                                        $end_at = \Carbon\Carbon::parse($data['end_at']);
+                                        $start_at = $end_at->copy()->subDays(3);
+
                                         return [
                                             'store_id' => Filament::getTenant()->id,
-                                            'title' => "{$this->getOwnerRecord()->provider->name} | {$shippingLine?->name} | 0 contenedores",
+                                            'title' => "{$this->getOwnerRecord()->reference_number} | {$this->getOwnerRecord()->provider->name} | {$shippingLine?->name} | 0 contenedores",
                                             'description' => $data['description'] ?? null,
-                                            'start_at' => $data['start_at'],
-                                            'end_at' => $data['end_at'] ?? null,
+                                            'start_at' => $start_at,
+                                            'end_at' => $end_at,
                                         ];
                                     })
                                     ->mutateRelationshipDataBeforeSaveUsing(function (array $data) use ($form): array {
@@ -87,12 +93,16 @@ class ShippingLineRelationManager extends RelationManager
                                         $shippingLine = $record?->shippingLine;
                                         $containerCount = $record?->containers->count() ?? 0;
 
+                                        // Calcular start_at 3 días antes del end_at
+                                        $end_at = \Carbon\Carbon::parse($data['end_at']);
+                                        $start_at = $end_at->copy()->subDays(3);
+
                                         return [
                                             'store_id' => Filament::getTenant()->id,
-                                            'title' => "{$this->getOwnerRecord()->provider->name} | {$shippingLine?->name} | {$containerCount} contenedores",
+                                            'title' => "{$this->getOwnerRecord()->reference_number} | {$this->getOwnerRecord()->provider->name} | {$shippingLine?->name} | {$containerCount} contenedores",
                                             'description' => $data['description'] ?? null,
-                                            'start_at' => $data['start_at'],
-                                            'end_at' => $data['end_at'] ?? null,
+                                            'start_at' => $start_at,
+                                            'end_at' => $end_at,
                                         ];
                                     }),
                             ])->columns(3),
@@ -141,7 +151,7 @@ class ShippingLineRelationManager extends RelationManager
                                         if ($event = $record?->events) {
                                             $containerCount = ($record->containers()->count() ?? 0) + 1;
                                             $event->update([
-                                                'title' => "{$this->getOwnerRecord()->provider->name} | {$record->shippingLine->name} | {$containerCount} contenedores"
+                                                'title' => "{$this->getOwnerRecord()->reference_number} | {$this->getOwnerRecord()->provider->name} | {$record->shippingLine->name} | {$containerCount} contenedores"
                                             ]);
                                         }
 
@@ -154,7 +164,7 @@ class ShippingLineRelationManager extends RelationManager
                                         if ($event = $record?->events) {
                                             $containerCount = $record->containers()->count();
                                             $event->update([
-                                                'title' => "{$this->getOwnerRecord()->provider->name} | {$record->shippingLine->name} | {$containerCount} contenedores"
+                                                'title' => "{$this->getOwnerRecord()->reference_number} | {$this->getOwnerRecord()->provider->name} | {$record->shippingLine->name} | {$containerCount} contenedores"
                                             ]);
                                         }
 
@@ -166,7 +176,7 @@ class ShippingLineRelationManager extends RelationManager
                                         if ($record && $event = $record->events) {
                                             $containerCount = $record->containers()->count();
                                             $event->update([
-                                                'title' => "{$this->getOwnerRecord()->provider->name} | {$record->shippingLine->name} | {$containerCount} contenedores"
+                                                'title' => "{$this->getOwnerRecord()->reference_number} | {$this->getOwnerRecord()->provider->name} | {$record->shippingLine->name} | {$containerCount} contenedores"
                                             ]);
                                         }
                                     })
@@ -221,7 +231,7 @@ class ShippingLineRelationManager extends RelationManager
                     ->label('Contenedores')
                     ->listWithLineBreaks()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('events.start_at')
+                Tables\Columns\TextColumn::make('estimated_departure')
                     ->label('Fecha Est. Salida')
                     ->date()
                     ->sortable(),

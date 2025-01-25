@@ -14,6 +14,8 @@ use Filament\Tables\Table;
 use Illuminate\Support\Str;
 use App\Models\AttributeValue;
 use Filament\Facades\Filament;
+use App\Imports\ComexItemImporter;
+use Filament\Support\Enums\MaxWidth;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -38,15 +40,16 @@ class ItemsRelationManager extends RelationManager
         return $form
             ->schema([
                 Forms\Components\Select::make('product_id')
-                    ->relationship(
-                        name: 'product',
-                        titleAttribute: 'product_name',
-                        modifyQueryUsing: fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant())
-                    )
+                    // ->relationship(
+                    //     name: 'product',
+                    //     titleAttribute: 'product_name',
+                    //     modifyQueryUsing: fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant())
+                    // )
                     ->searchable(['product_name', 'code'])
                     ->preload()
-                    // ->getSearchResultsUsing(fn(string $search): array => Product::getSelectSearchResults($search))
+                    ->getSearchResultsUsing(fn(string $search): array => Product::getSelectSearchResults($search))
                     ->getOptionLabelUsing(fn($value): ?string => Product::find($value)?->getFormattedLabel())
+                    ->createOptionForm(static::getProductsFormSchema())
                     ->required()
                     ->label('Producto')
                     ->columnSpan(3),
@@ -146,7 +149,25 @@ class ItemsRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()->label('Agregar Item'),
+                Tables\Actions\CreateAction::make()->label('Agregar Item')->modalWidth(MaxWidth::SixExtraLarge),
+                Tables\Actions\Action::make('import')
+                    ->label('Importar Items')
+                    ->modalWidth('lg')
+                    ->form([
+                        Forms\Components\FileUpload::make('file')
+                            ->label('Archivo CSV')
+                            ->acceptedFileTypes(['text/csv', 'application/vnd.ms-excel'])
+                            ->required()
+                    ])
+                    ->action(function (array $data) {
+                        $importer = new ComexItemImporter($this->getOwnerRecord());
+                        \Excel::import($importer, $data['file']);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Importación completada')
+                            ->send();
+                    })
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
@@ -286,6 +307,7 @@ class ItemsRelationManager extends RelationManager
                                                 ->searchable()
                                                 ->createOptionForm([
                                                     Forms\Components\TextInput::make('name')
+                                                        ->label('Nombre')
                                                         ->required()
                                                         ->maxLength(255)
                                                         ->unique('attributes', 'name'),
@@ -330,8 +352,11 @@ class ItemsRelationManager extends RelationManager
                                                 })
                                                 ->required()
                                                 ->live()
+                                                ->searchable()
+                                                ->preload()
                                                 ->createOptionForm([
                                                     Forms\Components\TextInput::make('value')
+                                                        ->label('Valor')
                                                         ->required()
                                                         ->maxLength(255),
                                                 ])
@@ -399,28 +424,46 @@ class ItemsRelationManager extends RelationManager
         ];
     }
 
-    public function getMeasurementUnitsFormSchema(): array
+    public static function getMeasurementUnitsFormSchema(): array
     {
         return [
             Forms\Components\Grid::make(2)->schema([
                 Forms\Components\TextInput::make('name')
                     ->label('Nombre')
-                    ->required(),
+                    ->required()
+                    ->maxLength(255),
+
+                Forms\Components\TextInput::make('code')
+                    ->label('Código')
+                    ->required()
+                    ->maxLength(50)
+                    ->unique('measurement_units', 'code'),
+
                 Forms\Components\TextInput::make('abbreviation')
                     ->label('Abreviatura')
-                    ->required(),
-                Forms\Components\TextInput::make('description')
-                    ->label('Descripción'),
+                    ->required()
+                    ->maxLength(10),
+
+                Forms\Components\Textarea::make('description')
+                    ->label('Descripción')
+                    ->maxLength(500)
+                    ->columnSpanFull(),
+
                 Forms\Components\Toggle::make('is_base_unit')
                     ->label('Es Unidad Base')
-                    ->default(false),
+                    ->default(false)
+                    ->reactive(),
+
                 Forms\Components\TextInput::make('conversion_factor')
                     ->label('Factor de Conversión')
                     ->numeric()
-                    ->visible(
-                        fn(Get $get) =>
-                        $get('is_base_unit') === false
-                    ),
+                    ->minValue(0)
+                    ->default(1)
+                    ->required()
+                    ->visible(fn(Get $get): bool => ! $get('is_base_unit'))
+                    ->rules([
+                        fn(Get $get): string => $get('is_base_unit') ? 'nullable' : 'required',
+                    ]),
             ]),
         ];
     }

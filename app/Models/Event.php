@@ -26,21 +26,30 @@ class Event extends Model implements Eventable
         'end_at' => 'datetime',
     ];
 
-    public function toEvent(): array
+    public function toEvent(): EventObject|array
     {
-        return [
-            'id' => $this->id, // Cambiar a número en lugar de string
-            'title' => $this->title,
-            'start' => $this->start_at->format('Y-m-d\TH:i:s'),
-            'end' => $this->end_at?->format('Y-m-d\TH:i:s'),
-            'allDay' => false,
-            'editable' => true,
-            'backgroundColor' => '#4a5568',
-            'textColor' => '#ffffff',
-            'extendedProps' => [
+        $event = EventObject::make($this)
+            ->title($this->title)
+            ->start($this->start_at);
+
+        // Si end_at existe, añadirlo al evento
+        if ($this->end_at) {
+            $event->end($this->end_at);
+        } else {
+            // Si no hay end_at, usar start_at como end
+            $event->end($this->start_at);
+        }
+
+        return $event
+            ->allDay(false)
+            ->editable(true)
+            ->backgroundColor('#4a5568')
+            ->textColor('#ffffff')
+            ->display('block')
+            ->extendedProps([
                 'description' => $this->description,
-            ],
-        ];
+                'displayEventTime' => false,
+            ]);
     }
 
     public function shippingLineContainer()

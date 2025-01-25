@@ -65,7 +65,8 @@ class MyCalendarWidget extends CalendarWidget
     public function getDateClickContextMenuActions(): array
     {
         return [
-            CreateAction::make('create')
+            CreateAction::make()
+                ->label('Crear Evento')
                 ->model(Event::class)
                 ->form($this->getFormSchema())
                 ->mutateFormDataUsing(function (array $data) {
@@ -73,7 +74,8 @@ class MyCalendarWidget extends CalendarWidget
                         'store_id' => Filament::getTenant()->id,
                     ]);
                 })
-                ->successNotificationTitle('Evento Creado'),
+                ->successNotificationTitle('Evento creado')
+                ->after(fn() => $this->dispatch('calendar-event-updated')),
         ];
     }
 
@@ -82,37 +84,29 @@ class MyCalendarWidget extends CalendarWidget
     {
         return [
             ViewAction::make()
+                ->label('Ver')
                 ->form($this->getFormSchema())
                 ->modalWidth('lg')
-                ->record(function (array $arguments) {
-                    // Usar el argumento correcto para obtener el ID
-                    return Event::find($this->getEventRecord()?->id);
-                }),
+                ->record(fn() => $this->getEventRecord()),
+
             EditAction::make()
+                ->label('Editar')
                 ->form($this->getFormSchema())
                 ->modalWidth('lg')
-                ->record(function (array $arguments) {
-                    return Event::find($this->getEventRecord()?->id);
-                })
-                ->mutateRecordDataUsing(function (array $data) {
-                    return [
-                        'title' => $data['title'],
-                        'description' => $data['description'],
-                        'start_at' => $data['start_at'],
-                        'end_at' => $data['end_at'],
+                ->record(fn() => $this->getEventRecord())
+                ->mutateFormDataUsing(function (array $data) {
+                    return array_merge($data, [
                         'store_id' => Filament::getTenant()->id,
-                    ];
+                    ]);
                 })
-                ->after(function () {
-                    $this->dispatch('calendar-event-updated');
-                }),
+                ->successNotificationTitle('Evento actualizado')
+                ->after(fn() => $this->dispatch('calendar-event-updated')),
+
             DeleteAction::make()
-                ->record(function (array $arguments) {
-                    return Event::find($this->getEventRecord()?->id);
-                })
-                ->after(function () {
-                    $this->dispatch('calendar-event-updated');
-                }),
+                ->label('Eliminar')
+                ->record(fn() => $this->getEventRecord())
+                ->successNotificationTitle('Evento eliminado')
+                ->after(fn() => $this->dispatch('calendar-event-updated')),
         ];
     }
 
@@ -130,6 +124,11 @@ class MyCalendarWidget extends CalendarWidget
             ],
             'locale' => 'es',
             'height' => '700px',
+            'titleFormat' => [ // Agregamos esta configuración
+                'year' => 'numeric',
+                'month' => 'long',
+                'day' => 'numeric'
+            ],
             'eventTimeFormat' => [
                 'hour' => '2-digit',
                 'minute' => '2-digit',
@@ -184,16 +183,23 @@ class MyCalendarWidget extends CalendarWidget
     {
         return [
             'id' => $this->id,
-            'title' => $this->title,
+            'title' => $this->title, // Solo el título sin la hora
             'start' => $this->start_at->format('Y-m-d\TH:i:s'),
             'end' => $this->end_at?->format('Y-m-d\TH:i:s'),
             'allDay' => false,
             'editable' => true,
-            'backgroundColor' => '#4a5568', // Color por defecto
+            'backgroundColor' => '#4a5568',
             'textColor' => '#ffffff',
+            'displayEventTime' => false, // Agregamos esta línea para ocultar la hora en el título
             'extendedProps' => [
                 'description' => $this->description,
             ],
         ];
+    }
+
+    // Agregar método de autorización
+    public function authorize($ability, $arguments = []): bool
+    {
+        return true; // Modificar según tus necesidades de autorización
     }
 }

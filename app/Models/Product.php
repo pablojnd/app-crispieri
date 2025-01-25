@@ -145,7 +145,22 @@ class Product extends Model
      */
     public function getFormattedLabel(): string
     {
-        return "{$this->product_name} [{$this->code}]";
+        // Obtener los valores de atributos formateados
+        $attributes = $this->product_attribute_values()
+            ->with(['attribute', 'attributeValue'])
+            ->get()
+            ->map(fn($pav) => "{$pav->attribute->name}: {$pav->attributeValue->value}")
+            ->join(' | ');
+
+        // Construir la etiqueta base
+        $label = "{$this->product_name} | Codigo: {$this->code}";
+
+        // Agregar atributos si existen
+        if (!empty($attributes)) {
+            $label .= " | {$attributes}";
+        }
+
+        return $label;
     }
 
     /**
@@ -159,6 +174,7 @@ class Product extends Model
                 $query->where('product_name', 'like', "%{$search}%")
                     ->orWhere('code', 'like', "%{$search}%");
             })
+            ->with(['product_attribute_values.attribute', 'product_attribute_values.attributeValue'])
             ->limit(50)
             ->get()
             ->mapWithKeys(fn(Product $product): array => [
