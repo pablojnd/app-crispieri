@@ -48,8 +48,9 @@ return new class extends Migration
             ])->comment('Tipo de documento comercial');
             $table->enum('document_clause', [
                 'fob',              // Free On Board
+                'cif',         // Cost, Insurance and Freight
                 'cost_and_freight', // Cost and Freight
-                'cif'              // Cost, Insurance and Freight
+                'cost_and_insurance' // Cost and Insurance
             ])->nullable()->comment('Cláusula de comercio internacional aplicada');
             $table->date('document_date')->comment('Fecha del documento');
             $table->decimal('fob_total', 15, 4)->default(0.00)->comment('Total FOB del documento');

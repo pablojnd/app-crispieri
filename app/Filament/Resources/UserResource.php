@@ -69,20 +69,37 @@ class UserResource extends Resource
                         )
                         ->preload()
                         ->searchable()
-                        ->reactive(),
+                        ->reactive()
+                        ->afterStateUpdated(function ($state, callable $set) {
+                            // Si no hay tienda por defecto seleccionada o la tienda seleccionada no está en la lista
+                            $storeIds = collect($state);
+                            if ($storeIds->isNotEmpty()) {
+                                // Intentamos establecer la tienda 3 como predeterminada si está disponible
+                                if ($storeIds->contains(3)) {
+                                    $set('latest_store_id', 3);
+                                } else {
+                                    // Si no está disponible la tienda 3, usamos la primera
+                                    $set('latest_store_id', $storeIds->first());
+                                }
+                            }
+                        })
+                        ->required(),
                     Forms\Components\Select::make('latest_store_id')
                         ->label('Tienda por Defecto')
                         ->relationship('latestStore', 'name')
                         ->options(function (callable $get) {
                             $storeIds = $get('stores');
                             if (!$storeIds) return [];
-                            return Store::whereIn('id', $storeIds)->pluck('name', 'id');
+                            return Store::whereIn('id', $storeIds)
+                                ->orderByRaw("CASE WHEN id = 3 THEN 0 ELSE 1 END, name")
+                                ->pluck('name', 'id');
                         })
                         ->searchable()
                         ->preload()
                         ->required()
                         ->exists('stores', 'id')
-                        ->visible(fn(callable $get) => count($get('stores')) > 0),
+                        ->visible(fn(callable $get) => count($get('stores')) > 0)
+                        ->default(3), // Intentamos establecer 3 como valor por defecto
                 ]),
         ]);
     }

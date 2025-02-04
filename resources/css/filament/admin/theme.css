@@ -2,6 +2,7 @@
 
 @config 'tailwind.config.js';
 
+@import 'vendor/awcodes/filament-table-repeater/resources/css/plugin.css';
 /* @import '../../../../vendor/filament/filament/resources/css/theme.css'; */
 
 /* Estilos personalizados para el calendario */

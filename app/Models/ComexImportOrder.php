@@ -128,7 +128,8 @@ class ComexImportOrder extends Model
         return self::query()
             ->whereNotIn('status', [
                 ImportOrderStatus::CANCELLED,
-                ImportOrderStatus::RECEIVED
+                ImportOrderStatus::RECEIVED,
+                ImportOrderStatus::FINISH
             ])
             ->where('store_id', Filament::getTenant()->id)
             ->count();
@@ -140,7 +141,8 @@ class ComexImportOrder extends Model
             ->where('store_id', Filament::getTenant()->id)
             ->whereNotIn('status', [
                 ImportOrderStatus::CANCELLED,
-                ImportOrderStatus::RECEIVED
+                ImportOrderStatus::RECEIVED,
+                ImportOrderStatus::FINISH
             ]);
 
         // Suma de gastos pendientes y parcialmente pagados

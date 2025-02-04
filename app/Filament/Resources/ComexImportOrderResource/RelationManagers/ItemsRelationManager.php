@@ -2,96 +2,79 @@
 
 namespace App\Filament\Resources\ComexImportOrderResource\RelationManagers;
 
-use Filament\Forms;
-use Filament\Tables;
 use App\Models\Product;
-use Filament\Forms\Get;
-use Filament\Forms\Set;
+use Filament\Forms;
 use Filament\Forms\Form;
-use App\Models\Attribute;
-use App\Models\ComexItem;
+use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Str;
-use App\Models\AttributeValue;
-use Filament\Facades\Filament;
-use App\Imports\ComexItemImporter;
-use Filament\Support\Enums\MaxWidth;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Enums\MaxWidth;
+use Awcodes\TableRepeater\Components\TableRepeater;
+use Awcodes\TableRepeater\Header;
+use Filament\Support\Enums\Alignment;
 
 class ItemsRelationManager extends RelationManager
 {
     protected static string $relationship = 'items';
     protected static ?string $recordTitleAttribute = 'product.name';
     protected static ?string $title = 'Items';
-    protected static ?string $modelLabel = 'Item';
-    protected static ?string $pluralModelLabel = 'Items';
-
-    protected static ?string $tenantOwnershipRelationshipName = 'store';
-
-    // Agregar estas líneas para especificar el nombre correcto de la clave foránea
-    protected static ?string $inverseRelationship = 'importOrder';
-    protected static ?string $foreignKeyName = 'import_order_id';
-    protected static ?string $inverseRelationshipForeignKeyName = 'import_order_id';
 
     public function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Select::make('product_id')
-                    // ->relationship(
-                    //     name: 'product',
-                    //     titleAttribute: 'product_name',
-                    //     modifyQueryUsing: fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant())
-                    // )
-                    ->searchable(['product_name', 'code'])
-                    ->preload()
-                    ->getSearchResultsUsing(fn(string $search): array => Product::getSelectSearchResults($search))
-                    ->getOptionLabelUsing(fn($value): ?string => Product::find($value)?->getFormattedLabel())
-                    ->createOptionForm(static::getProductsFormSchema())
-                    ->required()
                     ->label('Producto')
-                    ->columnSpan(3),
+                    ->options(fn() => Product::query()
+                        ->whereBelongsTo(\Filament\Facades\Filament::getTenant())
+                        ->with(['product_attribute_values.attribute', 'product_attribute_values.attributeValue'])
+                        ->get()
+                        ->mapWithKeys(fn(Product $product) => [
+                            $product->id => "{$product->product_name} | Código: {$product->code} | " .
+                                $product->product_attribute_values
+                                ->map(fn($pav) => "{$pav->attribute->name}: {$pav->attributeValue->value}")
+                                ->join(' | ')
+                        ]))
+                    ->searchable()
+                    ->preload()
+                    ->createOptionForm(static::getProductsFormSchema())
+                    ->createOptionUsing(function (array $data, $livewire) {
+                        $product = Product::create([
+                            ...$data,
+                            'store_id' => \Filament\Facades\Filament::getTenant()->id,
+                            'supplier_id' => $livewire->ownerRecord->provider_id,
+                            'status' => true,
+                        ]);
+
+                        if (!empty($data['product_attributes'])) {
+                            foreach ($data['product_attributes'] as $attribute) {
+                                $product->product_attribute_values()->create([
+                                    'attribute_id' => $attribute['attribute_id'],
+                                    'attribute_value_id' => $attribute['attribute_value_id'],
+                                ]);
+                            }
+                        }
+
+                        return $product->id;
+                    })
+                    ->required()
+                    ->columnSpanFull(),
 
                 Forms\Components\TextInput::make('package_quality')
-                    ->required()
-                    ->label('Cantidad de Bulto'),
+                    ->label('Cantidad de Bultos'),
 
                 Forms\Components\TextInput::make('quantity')
-                    ->numeric()
+                    ->label('Cantidad')
                     ->required()
-                    ->minValue(0)
-                    ->label('Cantidad'),
+                    ->numeric()
+                    ->minValue(0),
 
                 Forms\Components\TextInput::make('total_price')
-                    ->numeric()
+                    ->label('Precio Total')
                     ->required()
+                    ->numeric()
                     ->minValue(0)
-                    ->prefix('$')
-                    ->label('Precio Total'),
-
-                Forms\Components\Select::make('documents')
-                    ->relationship(
-                        name: 'documents',
-                        titleAttribute: 'document_number',
-                        modifyQueryUsing: fn(Builder $query) => $query->where('import_order_id', $this->getOwnerRecord()->id)
-                    )
-                    ->multiple()
-                    ->searchable()
-                    ->preload()
-                    ->label('Documentos'),
-
-                Forms\Components\Select::make('containers')
-                    ->relationship(
-                        name: 'containers',
-                        titleAttribute: 'container_number',
-                        modifyQueryUsing: fn(Builder $query) => $query->where('import_order_id', $this->getOwnerRecord()->id)
-                    )
-                    ->multiple()
-                    ->searchable()
-                    ->preload()
-                    ->label('Contenedores'),
+                    ->prefix('$'),
             ])
             ->columns(4);
     }
@@ -101,79 +84,40 @@ class ItemsRelationManager extends RelationManager
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('product.product_name')
+                    ->label('Producto')
+                    ->formatStateUsing(fn($record) => "{$record->product->product_name} | Código: {$record->product->code} |")
                     ->searchable()
-                    ->sortable()
-                    ->label('Producto'),
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('quantity')
+                    ->label('Cantidad')
                     ->numeric()
                     ->sortable()
-                    ->summarize(Tables\Columns\Summarizers\Sum::make())
-                    ->label('Cantidad'),
-
-                Tables\Columns\TextColumn::make('unit_price')
-                    ->numeric(
-                        decimalPlaces: 4,
-                        thousandsSeparator: '.',
-                        decimalSeparator: ','
-                    )
-                    ->label('Precio Unitario'),
+                    ->summarize(Tables\Columns\Summarizers\Sum::make()),
 
                 Tables\Columns\TextColumn::make('total_price')
-                    ->numeric(
-                        decimalPlaces: 4,
-                        thousandsSeparator: '.',
-                        decimalSeparator: ','
-                    )
-                    ->summarize(Tables\Columns\Summarizers\Sum::make())
-                    ->label('Precio Total'),
+                    ->label('Precio Total')
+                    ->money('USD')
+                    ->sortable()
+                    ->summarize(Tables\Columns\Summarizers\Sum::make()),
 
-                Tables\Columns\TextColumn::make('cif_unit')
-                    ->numeric(
-                        decimalPlaces: 4,
-                        thousandsSeparator: '.',
-                        decimalSeparator: ','
-                    )
-                    ->summarize(Tables\Columns\Summarizers\Sum::make())
-                    ->label('CIF Unitario'),
-
-                Tables\Columns\TextColumn::make('documents_count')
-                    ->counts('documents')
-                    ->label('Documentos'),
-
-                Tables\Columns\TextColumn::make('containers_count')
-                    ->counts('containers')
-                    ->label('Contenedores'),
+                Tables\Columns\TextColumn::make('package_quality')
+                    ->label('Bultos')
+                    ->numeric()
+                    ->sortable(),
             ])
             ->filters([
                 //
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()->label('Agregar Item')->modalWidth(MaxWidth::SixExtraLarge),
-                Tables\Actions\Action::make('import')
-                    ->label('Importar Items')
-                    ->modalWidth('lg')
-                    ->form([
-                        Forms\Components\FileUpload::make('file')
-                            ->label('Archivo CSV')
-                            ->acceptedFileTypes(['text/csv', 'application/vnd.ms-excel'])
-                            ->required()
-                    ])
-                    ->action(function (array $data) {
-                        $importer = new ComexItemImporter($this->getOwnerRecord());
-                        \Excel::import($importer, $data['file']);
-
-                        Notification::make()
-                            ->success()
-                            ->title('Importación completada')
-                            ->send();
-                    })
+                Tables\Actions\CreateAction::make()
+                    ->label('Agregar Item')
+                    ->modalWidth(MaxWidth::FiveExtraLarge),
             ])
             ->actions([
-                Tables\Actions\ActionGroup::make([
-                    Tables\Actions\EditAction::make(),
-                    Tables\Actions\DeleteAction::make(),
-                ]),
+                Tables\Actions\EditAction::make()
+                    ->modalWidth(MaxWidth::FiveExtraLarge),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -191,222 +135,140 @@ class ItemsRelationManager extends RelationManager
                     Forms\Components\Tabs\Tab::make('Información Básica')
                         ->icon('heroicon-o-information-circle')
                         ->schema([
-                            Forms\Components\Grid::make(3)->schema([
-                                Forms\Components\TextInput::make('product_name')
-                                    ->label('Nombre del Producto')
-                                    ->required()
-                                    ->live(onBlur: true)
-                                    ->afterStateUpdated(function (Get $get, Set $set, ?string $old, ?string $state) {
-                                        if (($get('slug') ?? '') !== Str::slug($old)) {
-                                            return;
-                                        }
-                                        $set('slug', Str::slug($state));
-                                    }),
-                                Forms\Components\Select::make('category_id')
-                                    ->relationship('category', 'name')
-                                    ->label('Categoría')
-                                    ->searchable()
-                                    ->preload()
-                                    ->createOptionForm([
-                                        Forms\Components\TextInput::make('name')
-                                            ->label('Nombre de la Categoría')
-                                            ->required(),
-                                    ])
-                                    ->required(),
-                                Forms\Components\Select::make('brand_id')
-                                    ->relationship('brand', 'name')
-                                    ->label('Marca')
-                                    ->searchable()
-                                    ->preload()
-                                    ->createOptionForm([
-                                        Forms\Components\TextInput::make('name')
-                                            ->label('Nombre de la Marca')
-                                            ->required(),
-                                    ]),
-                                Forms\Components\Select::make('measurement_unit_id')
-                                    ->relationship('measurementUnit', 'name')
-                                    ->label('Unidad de Medida')
-                                    ->searchable()
-                                    ->preload()
-                                    ->createOptionForm(function () {
-                                        return static::getMeasurementUnitsFormSchema();
-                                    })
-                                    ->required(),
-                                Forms\Components\TextInput::make('hs_code')
-                                    ->label('Código HS')
-                                    ->helperText('Código de clasificación arancelaria'),
+                            Forms\Components\Grid::make(3)
+                                ->schema([
+                                    Forms\Components\TextInput::make('product_name')
+                                        ->label('Nombre del Producto')
+                                        ->required()
+                                        ->maxLength(255),
 
-                                Forms\Components\TextInput::make('code')
-                                    ->label('Código Interno')
-                                    ->helperText('Código interno del producto'),
-                            ]),
+                                    Forms\Components\TextInput::make('code')
+                                        ->label('Código')
+                                        ->required()
+                                        ->maxLength(50),
+
+                                    Forms\Components\Select::make('category_id')
+                                        ->label('Categoría')
+                                        ->options(fn() => \App\Models\Category::query()
+                                            ->whereBelongsTo(\Filament\Facades\Filament::getTenant())
+                                            ->pluck('name', 'id'))
+                                        ->required()
+                                        ->searchable()
+                                        ->preload()
+                                        ->createOptionForm([
+                                            Forms\Components\TextInput::make('name')
+                                                ->required()
+                                                ->maxLength(255),
+                                        ]),
+
+                                    Forms\Components\Select::make('brand_id')
+                                        ->label('Marca')
+                                        ->options(fn() => \App\Models\Brand::query()
+                                            ->whereBelongsTo(\Filament\Facades\Filament::getTenant())
+                                            ->pluck('name', 'id'))
+                                        ->searchable()
+                                        ->preload()
+                                        ->createOptionForm([
+                                            Forms\Components\TextInput::make('name')
+                                                ->required()
+                                                ->maxLength(255),
+                                        ]),
+
+                                    Forms\Components\Select::make('measurement_unit_id')
+                                        ->label('Unidad de Medida')
+                                        ->options(fn() => \App\Models\MeasurementUnit::query()
+                                            ->pluck('name', 'id'))
+                                        ->required()
+                                        ->searchable()
+                                        ->preload(),
+                                ]),
                             Forms\Components\RichEditor::make('description')
                                 ->label('Descripción')
                                 ->columnSpanFull(),
                         ]),
 
-                    // Tab 3: Inventario y Logística
-                    Forms\Components\Tabs\Tab::make('Inventario')
+                    // Tab 2: Inventario y Logística
+                    Forms\Components\Tabs\Tab::make('Inventario y Logística')
                         ->icon('heroicon-o-truck')
                         ->schema([
-                            Forms\Components\Grid::make(2)->schema([
-                                // Forms\Components\TextInput::make('stock')
-                                //     ->label('Stock Actual')
-                                //     ->numeric()
-                                //     ->required(),
-                                // Forms\Components\TextInput::make('minimum_stock')
-                                //     ->label('Stock Mínimo')
-                                //     ->numeric(),
-                                // Forms\Components\TextInput::make('maximum_stock')
-                                //     ->label('Stock Máximo')
-                                //     ->numeric(),
-                                Forms\Components\TextInput::make('packing_type')
-                                    ->label('Tipo de Empaque'),
-                                Forms\Components\TextInput::make('packing_quantity')
-                                    ->label('Cantidad por Empaque')
-                                    ->numeric(),
-                            ]),
+                            Forms\Components\Grid::make(3)
+                                ->schema([
+                                    // Forms\Components\TextInput::make('stock')
+                                    //     ->label('Stock Actual')
+                                    //     ->numeric(),
+                                    // Forms\Components\TextInput::make('minimum_stock')
+                                    //     ->label('Stock Mínimo')
+                                    //     ->numeric(),
+                                    // Forms\Components\TextInput::make('maximum_stock')
+                                    //     ->label('Stock Máximo')
+                                    //     ->numeric(),
+                                    Forms\Components\TextInput::make('packing_type')
+                                        ->label('Tipo de Empaque'),
+                                    Forms\Components\TextInput::make('packing_quantity')
+                                        ->label('Cantidad por Empaque')
+                                        ->numeric(),
+                                ]),
+
                             Forms\Components\Section::make('Dimensiones')
-                                ->description('Medidas del producto')
                                 ->schema([
-                                    Forms\Components\Grid::make(4)->schema([
-                                        Forms\Components\TextInput::make('weight')
-                                            ->label('Peso (kg)')
-                                            ->numeric(),
-                                        Forms\Components\TextInput::make('length')
-                                            ->label('Largo (cm)')
-                                            ->numeric(),
-                                        Forms\Components\TextInput::make('width')
-                                            ->label('Ancho (cm)')
-                                            ->numeric(),
-                                        Forms\Components\TextInput::make('height')
-                                            ->label('Alto (cm)')
-                                            ->numeric(),
-                                    ]),
-                                ]),
-                        ]),
-
-                    // Tab 4: Atributos
-                    Forms\Components\Tabs\Tab::make('Atributos')
-                        ->icon('heroicon-o-adjustments-horizontal')
-                        ->schema([
-                            Forms\Components\Section::make('Atributos del producto')
-                                ->description('Seleccione los atributos y sus valores correspondientes')
-                                ->schema([
-                                    Forms\Components\Repeater::make('product_attributes')
-                                        ->relationship('product_attribute_values')
+                                    Forms\Components\Grid::make(4)
                                         ->schema([
-                                            Forms\Components\Select::make('attribute_id')
-                                                ->label('Atributo')
-                                                ->options(fn() => Attribute::query()
-                                                    ->where('store_id', Filament::getTenant()->id)
-                                                    ->pluck('name', 'id'))
-                                                ->required()
-                                                ->live()
-                                                ->preload()
-                                                ->searchable()
-                                                ->createOptionForm([
-                                                    Forms\Components\TextInput::make('name')
-                                                        ->label('Nombre')
-                                                        ->required()
-                                                        ->maxLength(255)
-                                                        ->unique('attributes', 'name'),
-                                                    Forms\Components\Repeater::make('values')
-                                                        ->schema([
-                                                            Forms\Components\TextInput::make('value')
-                                                                ->required()
-                                                                ->maxLength(255),
-                                                        ])
-                                                        ->defaultItems(1)
-                                                        ->minItems(1)
-                                                        ->addActionLabel('Agregar valor'),
-                                                ])
-                                                ->createOptionUsing(function (array $data) {
-                                                    $attribute = Attribute::create([
-                                                        'name' => $data['name'],
-                                                        'is_required' => $data['is_required'] ?? false,
-                                                        'is_active' => $data['is_active'] ?? true,
-                                                        'store_id' => Filament::getTenant()->id,
-                                                    ]);
-
-                                                    // Crear los valores del atributo
-                                                    foreach ($data['values'] as $valueData) {
-                                                        $attribute->values()->create([
-                                                            'value' => $valueData['value'],
-                                                        ]);
-                                                    }
-
-                                                    return $attribute->id;
-                                                })
-                                                ->afterStateUpdated(fn(Set $set) => $set('attribute_value_id', null)),
-
-                                            Forms\Components\Select::make('attribute_value_id')
-                                                ->label('Valor')
-                                                ->options(function (Get $get) {
-                                                    $attributeId = $get('attribute_id');
-                                                    if (!$attributeId) return [];
-
-                                                    return AttributeValue::query()
-                                                        ->where('attribute_id', $attributeId)
-                                                        ->pluck('value', 'id');
-                                                })
-                                                ->required()
-                                                ->live()
-                                                ->searchable()
-                                                ->preload()
-                                                ->createOptionForm([
-                                                    Forms\Components\TextInput::make('value')
-                                                        ->label('Valor')
-                                                        ->required()
-                                                        ->maxLength(255),
-                                                ])
-                                                ->createOptionUsing(function (array $data, Get $get) {
-                                                    return AttributeValue::create([
-                                                        'attribute_id' => $get('attribute_id'),
-                                                        'value' => $data['value'],
-                                                    ])->id;
-                                                })
-                                                ->visible(fn(Get $get) => filled($get('attribute_id')))
-                                        ])
-                                        ->columns(2)
-                                        ->itemLabel(
-                                            fn(array $state): ?string =>
-                                            Attribute::find($state['attribute_id'])?->name . ': ' .
-                                                AttributeValue::find($state['attribute_value_id'])?->value
-                                        )
-                                        ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
-                                            return [
-                                                'attribute_id' => $data['attribute_id'],
-                                                'attribute_value_id' => $data['attribute_value_id'],
-                                            ];
-                                        })
-                                        ->collapsible()
-                                        ->defaultItems(0)
-                                        ->addActionLabel('Agregar atributo'),
+                                            Forms\Components\TextInput::make('weight')
+                                                ->label('Peso (kg)')
+                                                ->numeric(),
+                                            Forms\Components\TextInput::make('length')
+                                                ->label('Largo (cm)')
+                                                ->numeric(),
+                                            Forms\Components\TextInput::make('width')
+                                                ->label('Ancho (cm)')
+                                                ->numeric(),
+                                            Forms\Components\TextInput::make('height')
+                                                ->label('Alto (cm)')
+                                                ->numeric(),
+                                        ]),
                                 ]),
                         ]),
 
-                    // Tab 6: Datos de Proveedor
+                    // Tab 3: Códigos y Referencias
+                    Forms\Components\Tabs\Tab::make('Códigos y Referencias')
+                        ->icon('heroicon-o-qr-code')
+                        ->schema([
+                            Forms\Components\Grid::make(2)
+                                ->schema([
+                                    Forms\Components\TextInput::make('hs_code')
+                                        ->label('Código HS'),
+                                    Forms\Components\TextInput::make('barcode')
+                                        ->label('Código de Barras'),
+                                    Forms\Components\TextInput::make('ean_code')
+                                        ->label('Código EAN'),
+                                    Forms\Components\TextInput::make('supplier_code')
+                                        ->label('Código de Proveedor'),
+                                    // Forms\Components\TextInput::make('supplier_reference')
+                                    //     ->label('Referencia de Proveedor'),
+                                ]),
+                        ]),
+
+                    // Tab 4: Proveedor
                     Forms\Components\Tabs\Tab::make('Proveedor')
                         ->icon('heroicon-o-building-office')
                         ->schema([
-                            Forms\Components\Grid::make(2)->schema([
-                                Forms\Components\Select::make('supplier_id')
-                                    ->label('Proveedor')
-                                    ->relationship('supplier', 'name')
-                                    ->searchable()
-                                    ->preload()
-                                    ->required(),
-                                Forms\Components\TextInput::make('supplier_code')
-                                    ->label('Código de Proveedor'),
-                                Forms\Components\TextInput::make('barcode')
-                                    ->label('Código de Barras'),
-                                Forms\Components\TextInput::make('ean_code')
-                                    ->label('Código EAN'),
-                            ]),
+                            Forms\Components\Grid::make(2)
+                                ->schema([
+                                    Forms\Components\Select::make('supplier_id')
+                                        ->label('Proveedor')
+                                        ->options(fn($get, $livewire) => [
+                                            $livewire->ownerRecord->provider_id => $livewire->ownerRecord->provider->name
+                                        ])
+                                        ->default(fn($livewire) => $livewire->ownerRecord->provider_id),
+
+                                    Forms\Components\TextInput::make('supplier_code')
+                                        ->label('Código de Proveedor'),
+                                    // Forms\Components\TextInput::make('supplier_reference')
+                                    //     ->label('Referencia de Proveedor'),
+                                ]),
                         ]),
 
-                    // Tab 7: Multimedia
+                    // Tab 5: Multimedia
                     Forms\Components\Tabs\Tab::make('Multimedia')
                         ->icon('heroicon-o-photo')
                         ->schema([
@@ -414,57 +276,85 @@ class ItemsRelationManager extends RelationManager
                                 ->label('Imágenes')
                                 ->multiple()
                                 ->image()
+                                ->imageResizeMode('contain')
+                                ->imageCropAspectRatio('16:9')
+                                ->imageResizeTargetWidth('1920')
+                                ->imageResizeTargetHeight('1080')
                                 ->maxFiles(5)
+                                ->reorderable()
                                 ->columnSpanFull(),
                         ]),
+                    // Tab 6: Atributos
+                    Forms\Components\Tabs\Tab::make('Atributos')
+                        ->icon('heroicon-o-adjustments-horizontal')
+                        ->schema([
+                            Forms\Components\Section::make('Atributos del producto')
+                                ->description('Seleccione los atributos y sus valores correspondientes')
+                                ->schema([
+                                    TableRepeater::make('product_attributes')
+                                        ->headers([
+                                            Header::make('attribute_id')
+                                                ->label('Atributo')
+                                                ->width('200px')
+                                                ->markAsRequired(),
+                                            Header::make('attribute_value_id')
+                                                ->label('Valor')
+                                                ->width('200px')
+                                                ->markAsRequired(),
+                                        ])
+                                        ->schema([
+                                            Forms\Components\Select::make('attribute_id')
+                                                ->label('Atributo')
+                                                ->options(fn() => \App\Models\Attribute::query()
+                                                    ->whereBelongsTo(\Filament\Facades\Filament::getTenant())
+                                                    ->pluck('name', 'id'))
+                                                ->required()
+                                                ->live()
+                                                ->afterStateUpdated(fn(Forms\Set $set) => $set('attribute_value_id', null))
+                                                ->createOptionForm([
+                                                    Forms\Components\TextInput::make('name')
+                                                        ->label('Nombre')
+                                                        ->required()
+                                                        ->maxLength(255),
+                                                    Forms\Components\Toggle::make('is_required')
+                                                        ->label('¿Es requerido?'),
+                                                ]),
+
+                                            Forms\Components\Select::make('attribute_value_id')
+                                                ->label('Valor')
+                                                ->options(function (Forms\Get $get) {
+                                                    $attributeId = $get('attribute_id');
+                                                    if (!$attributeId) return [];
+
+                                                    return \App\Models\AttributeValue::query()
+                                                        ->where('attribute_id', $attributeId)
+                                                        ->pluck('value', 'id');
+                                                })
+                                                ->required()
+                                                ->live()
+                                                ->createOptionForm([
+                                                    Forms\Components\TextInput::make('value')
+                                                        ->label('Valor')
+                                                        ->required()
+                                                        ->maxLength(255),
+                                                ])
+                                                ->createOptionUsing(function (array $data, Forms\Get $get) {
+                                                    return \App\Models\AttributeValue::create([
+                                                        'attribute_id' => $get('attribute_id'),
+                                                        'value' => $data['value'],
+                                                    ])->id;
+                                                }),
+                                        ])
+                                        ->columnSpanFull()
+                                        ->defaultItems(0)
+                                        ->addActionLabel('Agregar atributo')
+                                        ->emptyLabel('No hay atributos configurados')
+                                        ->streamlined()
+                                        ->showLabels(false),
+                                ]),
+                        ]),
                 ])
-                // ->persistTab()
-                ->id('product-tabs')
-                ->columnSpanFull()
-        ];
-    }
-
-    public static function getMeasurementUnitsFormSchema(): array
-    {
-        return [
-            Forms\Components\Grid::make(2)->schema([
-                Forms\Components\TextInput::make('name')
-                    ->label('Nombre')
-                    ->required()
-                    ->maxLength(255),
-
-                Forms\Components\TextInput::make('code')
-                    ->label('Código')
-                    ->required()
-                    ->maxLength(50)
-                    ->unique('measurement_units', 'code'),
-
-                Forms\Components\TextInput::make('abbreviation')
-                    ->label('Abreviatura')
-                    ->required()
-                    ->maxLength(10),
-
-                Forms\Components\Textarea::make('description')
-                    ->label('Descripción')
-                    ->maxLength(500)
-                    ->columnSpanFull(),
-
-                Forms\Components\Toggle::make('is_base_unit')
-                    ->label('Es Unidad Base')
-                    ->default(false)
-                    ->reactive(),
-
-                Forms\Components\TextInput::make('conversion_factor')
-                    ->label('Factor de Conversión')
-                    ->numeric()
-                    ->minValue(0)
-                    ->default(1)
-                    ->required()
-                    ->visible(fn(Get $get): bool => ! $get('is_base_unit'))
-                    ->rules([
-                        fn(Get $get): string => $get('is_base_unit') ? 'nullable' : 'required',
-                    ]),
-            ]),
+                ->columnSpanFull(),
         ];
     }
 }

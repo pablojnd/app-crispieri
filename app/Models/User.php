@@ -52,8 +52,22 @@ class User extends Authenticatable implements FilamentUser, HasTenants, HasDefau
 
     public function getDefaultTenant(Panel $panel): ?Model
     {
-        // Si no hay tienda por defecto, retornamos la primera tienda del usuario
-        return $this->latestStore ?? $this->stores()->first();
+        // Primero intentamos obtener la última tienda usada
+        if ($this->latestStore) {
+            return $this->latestStore;
+        }
+
+        // Si no hay última tienda, intentamos obtener la tienda con ID 3
+        $defaultStore = Store::find(3);
+
+        // Si existe la tienda 3 y el usuario tiene acceso a ella, la establecemos como predeterminada
+        if ($defaultStore && $this->stores->contains($defaultStore)) {
+            $this->setDefaultStore($defaultStore);
+            return $defaultStore;
+        }
+
+        // Si no se cumple lo anterior, retornamos la primera tienda del usuario
+        return $this->stores()->first();
     }
 
     public function latestStore(): BelongsTo
