@@ -12,6 +12,7 @@ use Filament\Support\Enums\MaxWidth;
 use Awcodes\TableRepeater\Components\TableRepeater;
 use Awcodes\TableRepeater\Header;
 use Filament\Support\Enums\Alignment;
+use Illuminate\Database\Eloquent\Builder;
 
 class ItemsRelationManager extends RelationManager
 {
@@ -75,8 +76,30 @@ class ItemsRelationManager extends RelationManager
                     ->numeric()
                     ->minValue(0)
                     ->prefix('$'),
+
+                Forms\Components\Select::make('documents')
+                    ->relationship(
+                        name: 'documents',
+                        titleAttribute: 'document_number',
+                        modifyQueryUsing: fn(Builder $query) => $query->where('import_order_id', $this->getOwnerRecord()->id)
+                    )
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                    ->label('Documentos'),
+
+                Forms\Components\Select::make('containers')
+                    ->relationship(
+                        name: 'containers',
+                        titleAttribute: 'container_number',
+                        modifyQueryUsing: fn(Builder $query) => $query->where('import_order_id', $this->getOwnerRecord()->id)
+                    )
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                    ->label('Contenedores'),
             ])
-            ->columns(4);
+            ->columns(5);
     }
 
     public function table(Table $table): Table
