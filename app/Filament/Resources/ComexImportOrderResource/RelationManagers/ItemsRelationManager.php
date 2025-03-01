@@ -2,17 +2,23 @@
 
 namespace App\Filament\Resources\ComexImportOrderResource\RelationManagers;
 
-use App\Models\Product;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Tables;
+use App\Models\Product;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
-use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Support\Enums\MaxWidth;
-use Awcodes\TableRepeater\Components\TableRepeater;
 use Awcodes\TableRepeater\Header;
+use App\Imports\ComexItemImporter;
+use Illuminate\Support\HtmlString;
+use Filament\Support\Enums\MaxWidth;
+use Filament\Notifications\Notification;
+use Maatwebsite\Excel\Facades\Excel;
 use Filament\Support\Enums\Alignment;
 use Illuminate\Database\Eloquent\Builder;
+use Awcodes\TableRepeater\Components\TableRepeater;
+use Filament\Resources\RelationManagers\RelationManager;
+use League\Csv\Writer;
+use Illuminate\Http\Response;
 
 class ItemsRelationManager extends RelationManager
 {
@@ -136,6 +142,237 @@ class ItemsRelationManager extends RelationManager
                 Tables\Actions\CreateAction::make()
                     ->label('Agregar Item')
                     ->modalWidth(MaxWidth::FiveExtraLarge),
+
+                // Acción mejorada para importar productos desde CSV
+                Tables\Actions\Action::make('importCsv')
+                    ->label('Importar CSV')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->color('success')
+                    ->form([
+                        Forms\Components\FileUpload::make('csv_file')
+                            ->label('Archivo CSV')
+                            ->acceptedFileTypes(['text/csv', 'application/vnd.ms-excel'])
+                            ->maxSize(5120) // 5MB
+                            ->required(),
+
+                        Forms\Components\Section::make('Instrucciones')
+                            ->collapsible()
+                            ->description('El archivo CSV debe contener las siguientes columnas:')
+                            ->schema([
+                                Forms\Components\Placeholder::make('columns_required')
+                                    ->label('Columnas requeridas')
+                                    ->content(new HtmlString('
+                                        <div class="font-medium text-primary-600">
+                                            • product_name - Nombre del producto<br>
+                                            • quantity - Cantidad del producto (usar punto como decimal, ej: 1401.12)<br>
+                                            • total_price - Precio total del producto (usar punto como decimal)
+                                        </div>')),
+
+                                Forms\Components\Placeholder::make('note')
+                                    ->label('Importante')
+                                    ->content(new HtmlString('
+                                        <div class="font-medium text-warning-600">
+                                            Para campos numéricos como cantidad y precio, puede usar punto o coma como separador decimal.<br>
+                                            Por ejemplo: 1401.12 ó 1401,12
+                                        </div>')),
+
+                                Forms\Components\Placeholder::make('columns_recommended')
+                                    ->label('Columnas recomendadas')
+                                    ->content(new HtmlString('
+                                        <div class="text-success-600">
+                                            • code - Código del producto<br>
+                                            • package_quality - Cantidad de bultos<br>
+                                            • category_name - Nombre de la categoría<br>
+                                            • brand_name - Nombre de la marca
+                                        </div>')),
+
+                                Forms\Components\Placeholder::make('columns_optional')
+                                    ->label('Columnas opcionales')
+                                    ->content(new HtmlString('
+                                        <div class="text-gray-600">
+                                            • description - Descripción del producto<br>
+                                            • hs_code - Código HS<br>
+                                            • supplier_code - Código del proveedor<br>
+                                            • weight - Peso del producto (kg)<br>
+                                            • length - Largo del producto (cm)<br>
+                                            • width - Ancho del producto (cm)<br>
+                                            • height - Alto del producto (cm)<br>
+                                            • packing_type - Tipo de empaque<br>
+                                            • packing_quantity - Cantidad por empaque<br>
+                                            • measurement_unit_id - ID de la unidad de medida
+                                        </div>')),
+
+                                Forms\Components\Placeholder::make('columns_attributes')
+                                    ->label('Atributos de producto')
+                                    ->content(new HtmlString('
+                                        <div class="text-amber-600 font-medium">
+                                            Para incluir atributos, puede agregar columnas con el prefijo "attribute_" seguido del nombre del atributo.<br>
+                                            Por ejemplo:<br>
+                                            • attribute_color - Color del producto<br>
+                                            • attribute_size - Talla del producto<br>
+                                            • attribute_material - Material del producto
+                                        </div>')),
+
+                                Forms\Components\Placeholder::make('example_with_attributes')
+                                    ->label('Ejemplo con atributos')
+                                    ->content(new HtmlString('
+                                        <div class="p-3 font-mono text-xs text-gray-900 bg-gray-100 rounded">
+                                        product_name,code,quantity,total_price,package_quality,category_name,brand_name,attribute_color,attribute_size<br>
+                                        "Camisa Azul","SHIRT001",100,1500,10,"Ropa","Marca A","Azul","XL"<br>
+                                        "Pantalón Negro","PANT002",50,2000,5,"Ropa","Marca B","Negro","32"
+                                        </div>')),
+
+                                Forms\Components\Actions::make([
+                                    Forms\Components\Actions\Action::make('downloadTemplate')
+                                        ->label('Descargar plantilla CSV')
+                                        ->icon('heroicon-o-document-arrow-down')
+                                        ->color('gray')
+                                        ->action(function () {
+                                            // Columnas básicas
+                                            $headers = [
+                                                // Datos básicos del producto
+                                                'product_name',
+                                                'code',
+                                                'quantity',
+                                                'total_price',
+                                                'package_quality',
+                                                'category_name',
+                                                'brand_name',
+                                                'description',
+
+                                                // Datos logísticos
+                                                'hs_code',
+                                                'supplier_code',
+                                                'packing_type',
+                                                'packing_quantity',
+                                                'weight',
+                                                'length',
+                                                'width',
+                                                'height',
+
+                                                // Otros códigos
+                                                'barcode',
+                                                'ean_code',
+
+                                                // Impuestos
+                                                'is_taxable',
+                                                'tax_rate',
+
+                                                // Niveles de stock
+                                                'minimum_stock',
+                                                'maximum_stock',
+
+                                                // Ofertas
+                                                'offer_price',
+                                                'offer_start_date',
+                                                'offer_end_date',
+
+                                                // Atributos comunes (se autogeneran si no existen)
+                                                'attribute_color',
+                                                'attribute_size',
+                                                'attribute_material',
+                                                'attribute_style'
+                                            ];
+
+                                            $csv = Writer::createFromString();
+                                            $csv->insertOne($headers);
+
+                                            // Añadir un par de ejemplos
+                                            $csv->insertOne([
+                                                // Datos básicos
+                                                'Camisa Azul Formal', 'SHIRT001', '100,50', '1500,75', '10', 'Ropa', 'Marca A',
+                                                'Camisa de algodón color azul para oficina',
+
+                                                // Datos logísticos
+                                                'HS12345', 'SUP001', 'Caja', '12', '0,5', '60', '40', '2',
+
+                                                // Otros códigos
+                                                '7890123456789', 'EAN-123456',
+
+                                                // Impuestos
+                                                'true', '16',
+
+                                                // Niveles de stock
+                                                '10', '100',
+
+                                                // Ofertas
+                                                '1200', '2024-05-01', '2024-05-31',
+
+                                                // Atributos
+                                                'Azul', 'XL', 'Algodón', 'Formal'
+                                            ]);
+
+                                            $csv->insertOne([
+                                                // Datos básicos
+                                                'Pantalón Negro', 'PANT002', '50', '2000', '5', 'Ropa', 'Marca B',
+                                                'Pantalón negro para caballero',
+
+                                                // Datos logísticos
+                                                'HS67890', 'SUP002', 'Paquete', '6', '0,7', '80', '35', '5',
+
+                                                // Otros códigos
+                                                '7890123456790', 'EAN-789012',
+
+                                                // Impuestos
+                                                'false', '',
+
+                                                // Niveles de stock
+                                                '5', '50',
+
+                                                // Ofertas
+                                                '1800', '2024-06-01', '2024-06-15',
+
+                                                // Atributos
+                                                'Negro', '32', 'Poliéster', 'Casual'
+                                            ]);
+
+                                            return response()->streamDownload(
+                                                fn () => print($csv->toString()),
+                                                'productos_completa_template.csv',
+                                                [
+                                                    'Content-Type' => 'text/csv',
+                                                ]
+                                            );
+                                        }),
+                                ]),
+                            ]),
+                    ])
+                    ->modalWidth(MaxWidth::FiveExtraLarge)
+                    ->action(function (array $data): void {
+                        // Validar y procesar el archivo
+                        $file = $data['csv_file'];
+
+                        if (is_string($file)) {
+                            $filePath = storage_path('app/public/' . $file);
+                        } else {
+                            $filePath = $file->getRealPath();
+                        }
+
+                        // Procesar la importación usando ComexItemImporter
+                        try {
+                            Excel::import(
+                                new ComexItemImporter($this->getOwnerRecord()),
+                                $filePath
+                            );
+
+                            // Notificar éxito
+                            Notification::make()
+                                ->title('Productos importados correctamente')
+                                ->success()
+                                ->send();
+
+                            // Eliminamos la llamada a refreshRecords() ya que no existe
+                            // Filament automáticamente actualizará los datos después de la acción
+                        } catch (\Exception $e) {
+                            // Notificar error con más detalles
+                            Notification::make()
+                                ->title('Error al importar')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->persistent()
+                                ->send();
+                        }
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()

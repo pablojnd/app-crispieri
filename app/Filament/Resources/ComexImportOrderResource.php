@@ -153,7 +153,7 @@ class ComexImportOrderResource extends Resource
                         return $record->getTotalCifAndExpenses();
                     }),
             ])
-            ->defaultSort('created_at', 'desc')
+            ->defaultSort('reference_number', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options(ImportOrderStatus::class),
