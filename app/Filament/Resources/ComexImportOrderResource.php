@@ -9,10 +9,12 @@ use Filament\Tables\Table;
 use Filament\Facades\Filament;
 use App\Models\ComexImportOrder;
 use Filament\Resources\Resource;
-use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\ComexItemImporter;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ComexImportOrderExport;
 use Illuminate\Database\Eloquent\Builder;
+use App\Exports\ComexImportOrderBulkExport;
 use App\Exports\ComexImportOrderSimpleExport;
 use App\Enums\{TransportType, ImportOrderStatus};
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -206,6 +208,21 @@ class ComexImportOrderResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\BulkAction::make('bulkExportExcel')
+                        ->label('Exportar Excel')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->action(function (Collection $records) {
+                            $selectedIds = $records->pluck('id')->toArray();
+                            return Excel::download(
+                                new ComexImportOrderBulkExport($selectedIds),
+                                'Ordenes_importacion_' . now()->format('Y_m_d_H_i') . '.xlsx'
+                            );
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('Exportar órdenes seleccionadas')
+                        ->modalDescription('Se generará un archivo Excel con todas las órdenes seleccionadas. Cada orden tendrá su propia hoja en el documento.')
+                        ->modalSubmitActionLabel('Exportar')
+                        ->deselectRecordsAfterCompletion(),
                 ]),
             ]);
     }
