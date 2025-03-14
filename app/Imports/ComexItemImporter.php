@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\ComexItem;
 use App\Models\Attribute;
 use App\Models\AttributeValue;
+use App\Models\MeasurementUnit;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
@@ -45,17 +46,22 @@ class ComexItemImporter implements ToCollection, WithHeadingRow, WithValidation
             // Primero intentar manejar notación científica
             if (strpos($value, 'E+') !== false || strpos($value, 'e+') !== false) {
                 // Es notación científica, convertir a número directamente
-                $parsed = (string) floatval($value);
-                return $parsed;
+                return (string) floatval($value);
             }
+
+            // Eliminar caracteres no numéricos excepto punto y coma
+            $value = preg_replace('/[^\d.,]/', '', $value);
 
             // Manejar comas como separador decimal
             $value = str_replace(',', '.', $value);
 
             // Verificar si ahora es un número válido
             if (is_numeric($value)) {
-                return $value;
+                return (string) floatval($value);
             }
+        } elseif (is_numeric($value)) {
+            // Si ya es numérico, asegurarnos que sea string para consistencia
+            return (string) floatval($value);
         }
 
         return $value;
@@ -96,14 +102,83 @@ class ComexItemImporter implements ToCollection, WithHeadingRow, WithValidation
         return $value;
     }
 
+    /**
+     * Validación antes de importar - esto es clave para prevenir errores
+     */
+    public function prepareForValidation($data, $index)
+    {
+        // Preprocesar valores numéricos antes de la validación
+        $numericFields = [
+            'quantity', 'total_price', 'package_quality', 'weight', 'length',
+            'width', 'height', 'packing_quantity', 'tax_rate',
+            'minimum_stock', 'maximum_stock', 'offer_price'
+        ];
+
+        foreach ($numericFields as $field) {
+            if (isset($data[$field])) {
+                $data[$field] = $this->prepareNumericValue($data[$field]);
+            }
+        }
+
+        // Preprocesar fechas antes de la validación
+        $dateFields = ['offer_start_date', 'offer_end_date'];
+        foreach ($dateFields as $field) {
+            if (isset($data[$field])) {
+                $data[$field] = $this->prepareDateValue($data[$field]);
+            }
+        }
+
+        // Preprocesar valores booleanos
+        if (isset($data['is_taxable'])) {
+            // Convertir valores de texto a booleano
+            $data['is_taxable'] = $this->convertBooleanValue($data['is_taxable']);
+        }
+
+        // Procesar campos de atributos dinámicos (attribute_*)
+        foreach ($data as $key => $value) {
+            if (is_string($key) && strpos($key, 'attribute_') === 0 && !is_null($value)) {
+                // Convertir todos los valores de attribute_* a string
+                $data[$key] = (string)$value;
+            }
+        }
+
+        // Corregir códigos de barras (eliminar notación científica)
+        if (isset($data['barcode'])) {
+            if (strpos($data['barcode'], 'E+') !== false || strpos($data['barcode'], 'e+') !== false) {
+                // Convertir de notación científica a número regular
+                $data['barcode'] = number_format((float)$data['barcode'], 0, '', '');
+            }
+        }
+
+        if (isset($data['ean_code'])) {
+            // Asegurar que ean_code sea string
+            $data['ean_code'] = (string)$data['ean_code'];
+        }
+
+        return $data;
+    }
+
     public function collection(Collection $rows)
     {
+        $index = 0;
         foreach ($rows as $row) {
+            // Log para diagnóstico
+            $this->logImportData($row, $index++);
+
             // Preprocesar valores numéricos (convertir comas en puntos)
             $numericFields = [
-                'quantity', 'total_price', 'package_quality', 'weight', 'length',
-                'width', 'height', 'packing_quantity', 'tax_rate',
-                'minimum_stock', 'maximum_stock', 'offer_price'
+                'quantity',
+                'total_price',
+                'package_quality',
+                'weight',
+                'length',
+                'width',
+                'height',
+                'packing_quantity',
+                'tax_rate',
+                'minimum_stock',
+                'maximum_stock',
+                'offer_price'
             ];
 
             foreach ($numericFields as $field) {
@@ -173,13 +248,15 @@ class ComexItemImporter implements ToCollection, WithHeadingRow, WithValidation
                 }
 
                 // Preparar los datos básicos del producto
+                $measurementUnitId = $this->getMeasurementUnitId($row['measurement_unit_id'] ?? null);
+
                 $productData = [
                     'product_name' => $row['product_name'],
                     'store_id' => $this->store->id,
                     'supplier_id' => $this->importOrder->provider_id,
                     'category_id' => $categoryId,
                     'brand_id' => $brandId,
-                    'measurement_unit_id' => $row['measurement_unit_id'] ?? 1,
+                    'measurement_unit_id' => $measurementUnitId,
                     'status' => true,
                     'description' => $row['description'] ?? null,
                     'hs_code' => $row['hs_code'] ?? null,
@@ -200,6 +277,9 @@ class ComexItemImporter implements ToCollection, WithHeadingRow, WithValidation
                     'offer_start_date' => $row['offer_start_date'] ?? null,
                     'offer_end_date' => $row['offer_end_date'] ?? null,
                 ];
+
+                // Registrar la unidad de medida que se va a usar
+                \Log::info('Usando unidad de medida ID=' . $measurementUnitId . ' para producto ' . $row['product_name']);
 
                 // Solo asignar código si está presente en el CSV
                 // El trait HasSku generará automáticamente el SKU (no el código)
@@ -231,11 +311,25 @@ class ComexItemImporter implements ToCollection, WithHeadingRow, WithValidation
                         throw new \Exception("La fecha de fin de oferta no es válida: {$productData['offer_end_date']}");
                     }
 
+                    // Registrar información adicional para depuración
+                    $this->logImportData($row, $index, [
+                        'measurement_unit_id' => $productData['measurement_unit_id'],
+                        'barcode_processed' => $productData['barcode'],
+                        'ean_code_processed' => $productData['ean_code'],
+                    ]);
+
+                    // Verificar explícitamente si la unidad de medida existe
+                    if (!MeasurementUnit::find($productData['measurement_unit_id'])) {
+                        throw new \Exception("La unidad de medida con ID {$productData['measurement_unit_id']} no existe en la base de datos");
+                    }
+
                     $product = Product::create($productData);
 
                     // Procesar atributos dinámicos (columnas que comienzan con "attribute_")
-                    $this->processProductAttributes($product, $row);
+                    $this->processProductAttributes($product, $row->toArray());
                 } catch (\Exception $e) {
+                    // Registrar error detallado
+                    \Log::error('Error al crear producto: ' . $e->getMessage() . '. Datos del producto: ' . json_encode($productData));
                     throw new \Exception("Error al crear el producto {$row['product_name']}: " . $e->getMessage());
                 }
             }
@@ -246,9 +340,12 @@ class ComexItemImporter implements ToCollection, WithHeadingRow, WithValidation
                     'store_id' => $this->store->id,
                     'import_order_id' => $this->importOrder->id,
                     'product_id' => $product->id,
-                    'package_quality' => $row['package_quality'] ?? 1,
+                    'package_quality' => $row['package_quality'] ?? 1,  // Asegurarse de usar el valor procesado
                     'quantity' => $row['quantity'],
                     'total_price' => $row['total_price'],
+                    'cif_unit' => $row['total_price'] > 0 && $row['quantity'] > 0
+                        ? (float)$row['total_price'] / (float)$row['quantity']
+                        : 0,  // Calcular cif_unit automáticamente
                 ]);
             } catch (\Exception $e) {
                 throw new \Exception("Error al crear el item para {$product->product_name}: " . $e->getMessage());
@@ -268,6 +365,9 @@ class ComexItemImporter implements ToCollection, WithHeadingRow, WithValidation
         // Buscar todas las columnas que comienzan con "attribute_"
         foreach ($row as $key => $value) {
             if (!empty($value) && is_string($key) && strpos($key, 'attribute_') === 0) {
+                // Asegurarnos de que el valor sea string
+                $value = (string)$value;
+
                 // Obtener el nombre del atributo removiendo el prefijo "attribute_"
                 $attributeName = Str::title(str_replace('attribute_', '', $key));
 
@@ -331,11 +431,11 @@ class ComexItemImporter implements ToCollection, WithHeadingRow, WithValidation
     {
         return [
             '*.product_name' => ['required', 'string', 'max:255'],
-            '*.quantity' => ['required'],  // Eliminamos 'numeric' para validar después de convertir
-            '*.total_price' => ['required'], // Eliminamos 'numeric' para validar después de convertir
+            '*.quantity' => ['required', 'numeric'],  // Ahora podemos volver a añadir 'numeric'
+            '*.total_price' => ['required', 'numeric'], // Ahora podemos volver a añadir 'numeric'
             // Campos opcionales pero importantes
             '*.code' => ['nullable', 'string', 'max:50'],
-            '*.package_quality' => ['nullable', 'numeric', 'min:0'],
+            '*.package_quality' => ['nullable', 'numeric', 'min:0'], // Volver a añadir 'numeric'
             '*.category_name' => ['nullable', 'string', 'max:255'],
             '*.brand_name' => ['nullable', 'string', 'max:255'],
             '*.category_id' => ['nullable', 'integer'],
@@ -360,8 +460,8 @@ class ComexItemImporter implements ToCollection, WithHeadingRow, WithValidation
             '*.offer_price' => ['nullable', 'numeric'],
             '*.offer_start_date' => ['nullable', 'date'],
             '*.offer_end_date' => ['nullable', 'date'],
-            // Campos para atributos
-            '*.attribute_*' => ['nullable', 'string', 'max:255'],
+            // Campos para atributos - cambiamos la regla para ser más permisiva y luego los convertimos a string
+            '*.attribute_*' => ['nullable'],
         ];
     }
 
@@ -385,7 +485,15 @@ class ComexItemImporter implements ToCollection, WithHeadingRow, WithValidation
 
             foreach ($rows as $row) {
                 // Validar campos numéricos
-                $numericFields = ['quantity', 'total_price', 'package_quality', 'weight', 'length', 'width', 'height'];
+                $numericFields = [
+                    'quantity',
+                    'total_price',
+                    'package_quality',  // Asegurarse de incluir package_quality aquí
+                    'weight',
+                    'length',
+                    'width',
+                    'height'
+                ];
                 foreach ($numericFields as $field) {
                     if (isset($row[$field]) && !empty($row[$field])) {
                         $numericValue = $this->prepareNumericValue($row[$field]);
@@ -435,6 +543,179 @@ class ComexItemImporter implements ToCollection, WithHeadingRow, WithValidation
             return $d && $d->format('Y-m-d') === $date;
         } catch (\Exception $e) {
             return false;
+        }
+    }
+
+    /**
+     * Para diagnóstico - agregar a la clase para ver qué valores son problemáticos
+     */
+    protected function logImportData($row, $index, array $additionalData = [])
+    {
+        $logData = [
+            'row' => $index,
+            'product_name' => $row['product_name'] ?? 'N/A',
+            'weight' => $row['weight'] ?? 'N/A',
+            'weight_processed' => $this->prepareNumericValue($row['weight'] ?? null),
+            'is_numeric' => is_numeric($this->prepareNumericValue($row['weight'] ?? null)) ? 'true' : 'false'
+        ];
+
+        // Agregar datos adicionales para depuración
+        $logData = array_merge($logData, $additionalData);
+
+        // Crear un archivo de log para depuración
+        $logPath = storage_path('logs/import_debug.log');
+        file_put_contents(
+            $logPath,
+            json_encode($logData) . PHP_EOL,
+            FILE_APPEND
+        );
+    }
+
+    /**
+     * Obtiene o crea una unidad de medida predeterminada
+     *
+     * @return int ID de la unidad de medida
+     */
+    protected function getDefaultMeasurementUnitId(): int
+    {
+        try {
+            // Comprobar si la tabla tiene algún registro
+            $hasUnits = MeasurementUnit::count() > 0;
+
+            if ($hasUnits) {
+                // Si hay unidades de medida, obtener la primera
+                $unit = MeasurementUnit::first();
+                \Log::info('Unidad de medida encontrada: ID=' . $unit->id . ', Nombre=' . $unit->name);
+                return $unit->id;
+            } else {
+                // No hay unidades de medida, crear una
+                \Log::info('No se encontraron unidades de medida. Creando una nueva...');
+
+                // Incluimos el campo 'code' que es obligatorio
+                $unit = MeasurementUnit::create([
+                    'name' => 'Unidad',
+                    'code' => 'UN',
+                    'abbreviation' => 'UN',
+                    'description' => 'Unidad por defecto',
+                    'is_base_unit' => true,
+                    'conversion_factor' => 1
+                ]);
+
+                \Log::info('Nueva unidad de medida creada: ID=' . $unit->id);
+                return $unit->id;
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error obteniendo/creando unidad de medida: ' . $e->getMessage());
+
+            // Intentar obtener las columnas disponibles para diagnóstico
+            try {
+                $columns = \DB::getSchemaBuilder()->getColumnListing('measurement_units');
+                \Log::info('Columnas disponibles en measurement_units: ' . implode(', ', $columns));
+            } catch (\Exception $ex) {
+                \Log::error('No se pudo obtener las columnas: ' . $ex->getMessage());
+            }
+
+            // Intentar con un método más seguro
+            return $this->getKnownMeasurementUnitId();
+        }
+    }
+
+    /**
+     * Obtiene el ID de una unidad de medida conocida que existe en la base de datos
+     *
+     * @return int ID de una unidad de medida existente
+     */
+    protected function getKnownMeasurementUnitId(): int
+    {
+        // Consulta directa a la base de datos para obtener un ID existente
+        $result = \DB::select('SELECT id FROM measurement_units LIMIT 1');
+        if (!empty($result)) {
+            return $result[0]->id;
+        }
+
+        // Si aún no hay unidades de medida, crear una directamente con SQL
+        try {
+            // Incluir todos los campos requeridos según el log
+            $sql = "INSERT INTO measurement_units (name, code, abbreviation, description, is_base_unit, conversion_factor, created_at, updated_at)
+                   VALUES ('Unidad', 'UN', 'UN', 'Unidad por defecto', 1, 1, NOW(), NOW())";
+            \DB::statement($sql);
+
+            // Obtener el ID del registro creado
+            $result = \DB::select('SELECT id FROM measurement_units ORDER BY id DESC LIMIT 1');
+            if (!empty($result)) {
+                $unitId = $result[0]->id;
+                \Log::info('Unidad de medida creada con SQL: ID=' . $unitId);
+                return $unitId;
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error al intentar crear unidad de medida con SQL: ' . $e->getMessage());
+        }
+
+        // Si todo falla, verificar si hay alguna unidad existente
+        try {
+            // Buscar cualquier unidad de medida existente
+            $existingUnit = MeasurementUnit::first();
+            if ($existingUnit) {
+                \Log::info('Usando unidad de medida existente de último recurso: ID=' . $existingUnit->id);
+                return $existingUnit->id;
+            }
+
+            // Si realmente no hay ninguna unidad, lanzar una excepción descriptiva
+            throw new \Exception('No se pudo crear ni encontrar ninguna unidad de medida');
+        } catch (\Exception $e) {
+            \Log::error('Error crítico con unidades de medida: ' . $e->getMessage());
+            throw $e; // Re-lanzar para detener la importación con un mensaje claro
+        }
+    }
+
+    /**
+     * Obtiene una unidad de medida por su ID o nombre, o usa la predeterminada
+     *
+     * @param mixed $idOrName ID o nombre de la unidad de medida
+     * @return int ID de la unidad de medida
+     */
+    protected function getMeasurementUnitId($idOrName): int
+    {
+        try {
+            // Si no se proporciona, usar la predeterminada
+            if (empty($idOrName)) {
+                $defaultId = $this->getDefaultMeasurementUnitId();
+
+                // Verificar explícitamente que la unidad existe
+                if (MeasurementUnit::find($defaultId)) {
+                    return $defaultId;
+                } else {
+                    throw new \Exception("La unidad de medida predeterminada con ID {$defaultId} no existe");
+                }
+            }
+
+            // Si es numérico, intentar buscar por ID
+            if (is_numeric($idOrName)) {
+                $unit = MeasurementUnit::find($idOrName);
+                if ($unit) {
+                    return $unit->id;
+                }
+            }
+
+            // Intentar buscar por nombre o código
+            $unit = MeasurementUnit::where('name', $idOrName)
+                ->orWhere('code', $idOrName)
+                ->first();
+
+            if ($unit) {
+                return $unit->id;
+            }
+
+            // Si no se encuentra, usar la predeterminada con verificación explícita
+            $defaultId = $this->getDefaultMeasurementUnitId();
+            if (!MeasurementUnit::find($defaultId)) {
+                throw new \Exception("La unidad de medida predeterminada con ID {$defaultId} no existe");
+            }
+
+            return $defaultId;
+        } catch (\Exception $e) {
+            \Log::error('Error buscando unidad de medida: ' . $e->getMessage());
+            throw $e; // Re-lanzar para detener la importación con un mensaje claro
         }
     }
 }

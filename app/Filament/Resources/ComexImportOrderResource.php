@@ -10,6 +10,7 @@ use Filament\Facades\Filament;
 use App\Models\ComexImportOrder;
 use Filament\Resources\Resource;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\ComexItemImporter;
 use App\Exports\ComexImportOrderExport;
 use Illuminate\Database\Eloquent\Builder;
 use App\Exports\ComexImportOrderSimpleExport;
@@ -160,10 +161,34 @@ class ComexImportOrderResource extends Resource
                 Tables\Filters\SelectFilter::make('type')
                     ->options(TransportType::class),
             ])
+            ->headerActions([
+                Tables\Actions\CreateAction::make(),
+            ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\DeleteAction::make(),
+                    Tables\Actions\Action::make('importItems')
+                        ->label('Importar Productos')
+                        ->icon('heroicon-o-arrow-up-tray')
+                        ->form([
+                            Forms\Components\FileUpload::make('csv_file')
+                                ->label('Archivo CSV')
+                                ->acceptedFileTypes(['text/csv', 'application/vnd.ms-excel', 'application/csv', 'application/x-csv', 'text/comma-separated-values', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
+                                ->required()
+                                ->helperText('Sube un archivo CSV o Excel con los productos a importar')
+                        ])
+                        ->action(function (array $data, ComexImportOrder $record) {
+                            try {
+                                Excel::import(new ComexItemImporter($record), $data['csv_file']);
+
+                                // Notificar éxito
+                                Filament::notify('success', 'Productos importados correctamente');
+                            } catch (\Exception $e) {
+                                // Notificar error
+                                Filament::notify('danger', 'Error al importar: ' . $e->getMessage());
+                            }
+                        }),
                     Tables\Actions\Action::make('exportExcelInterno')
                         ->label('Exportar Excel Interno')
                         ->icon('heroicon-o-document-arrow-down')
@@ -230,13 +255,13 @@ class ComexImportOrderResource extends Resource
                                         ->maxLength(255),
                                     Forms\Components\TextInput::make('phone')
                                         ->label('Teléfono')
-                                        ->helperText('Incluir código de país')
-                                        ->maxLength(255),
+                                        ->numeric()
+                                        ->helperText('Incluir código de país'),
                                     Forms\Components\TextInput::make('rut')
                                         ->label('RUT')
                                         ->unique(ignoreRecord: true)
-                                        ->helperText('RUT chileno sin puntos ni guión')
-                                        ->maxLength(255),
+                                        ->numeric()
+                                        ->helperText('RUT chileno sin puntos ni guión'),
                                     Forms\Components\Select::make('type')
                                         ->label('Tipo de Proveedor')
                                         ->options([
@@ -278,6 +303,7 @@ class ComexImportOrderResource extends Resource
                                                 ->maxLength(255),
                                             Forms\Components\TextInput::make('street_number')
                                                 ->label('Número')
+                                                ->numeric()
                                                 ->maxLength(255),
                                             Forms\Components\TextInput::make('city')
                                                 ->label('Ciudad')
