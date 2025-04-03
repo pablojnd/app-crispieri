@@ -25,6 +25,10 @@ use App\Filament\Clusters\ProductManagement;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Clusters\ProductManagement\Resources\ProductResource\Pages;
 use App\Filament\Clusters\ProductManagement\Resources\ProductResource\RelationManagers;
+use App\Exports\ProductsExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 
 class ProductResource extends Resource
 {
@@ -391,6 +395,62 @@ class ProductResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\BulkAction::make('exportSelected')
+                        ->label('Exportar Seleccionados')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->action(function ($records): void {
+                            try {
+                                // Obtener los IDs de los productos seleccionados
+                                $productIds = $records->pluck('id')->toArray();
+
+                                if (empty($productIds)) {
+                                    Notification::make()
+                                        ->title('Sin productos seleccionados')
+                                        ->body('Por favor seleccione al menos un producto para exportar.')
+                                        ->warning()
+                                        ->send();
+                                    return;
+                                }
+
+                                // Mostrar notificación de proceso iniciado
+                                Notification::make()
+                                    ->title('Generando exportación')
+                                    ->body('Preparando ' . count($productIds) . ' productos seleccionados...')
+                                    ->info()
+                                    ->send();
+
+                                // Generar un nombre de archivo único
+                                $filename = 'productos-seleccionados-' . count($productIds) . '-' . now()->format('Y-m-d-His') . '.xlsx';
+                                $filepath = 'exports/' . $filename;
+
+                                // Guardar el archivo en el disco
+                                Excel::store(new ProductsExport($productIds), $filepath, 'public');
+
+                                // Generar una URL de descarga y notificar
+                                $downloadUrl = route('product.download', ['filename' => $filepath]);
+
+                                Notification::make()
+                                    ->title('Exportación completada')
+                                    ->body('Haga clic aquí para descargar ' . count($productIds) . ' productos')
+                                    ->actions([
+                                        \Filament\Notifications\Actions\Action::make('download')
+                                            ->label('Descargar')
+                                            ->url($downloadUrl)
+                                            ->openUrlInNewTab()
+                                    ])
+                                    ->success()
+                                    ->send();
+                            } catch (\Exception $e) {
+                                // Registrar el error
+                                Log::error('Error en exportación de productos seleccionados: ' . $e->getMessage());
+
+                                Notification::make()
+                                    ->title('Error al exportar productos seleccionados')
+                                    ->body('Detalles: ' . $e->getMessage())
+                                    ->danger()
+                                    ->send();
+                            }
+                        }),
                 ]),
             ]);
     }

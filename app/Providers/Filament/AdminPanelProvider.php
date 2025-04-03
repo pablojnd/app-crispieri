@@ -66,7 +66,8 @@ class AdminPanelProvider extends PanelProvider
                 Store::class,
                 ownershipRelationship: 'store',
                 // slugAttribute: 'slug'
-            );
+            )
+            ->topNavigation();
         // ->tenantRegistration();
     }
 }
