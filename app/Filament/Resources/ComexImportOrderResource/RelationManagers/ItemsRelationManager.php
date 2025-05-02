@@ -205,7 +205,7 @@ class ItemsRelationManager extends RelationManager
                                 Forms\Components\Placeholder::make('columns_attributes')
                                     ->label('Atributos de producto')
                                     ->content(new HtmlString('
-                                        <div class="text-amber-600 font-medium">
+                                        <div class="font-medium text-amber-600">
                                             Para incluir atributos, puede agregar columnas con el prefijo "attribute_" seguido del nombre del atributo.<br>
                                             Por ejemplo:<br>
                                             • attribute_color - Color del producto<br>
@@ -419,7 +419,14 @@ class ItemsRelationManager extends RelationManager
                                             Forms\Components\TextInput::make('name')
                                                 ->required()
                                                 ->maxLength(255),
-                                        ]),
+                                        ])
+                                        ->createOptionUsing(function (array $data) {
+                                            return \App\Models\Category::create([
+                                                'name' => $data['name'],
+                                                'store_id' => \Filament\Facades\Filament::getTenant()->id,
+                                                'status' => true,
+                                            ])->id;
+                                        }),
 
                                     Forms\Components\Select::make('brand_id')
                                         ->label('Marca')
@@ -432,7 +439,14 @@ class ItemsRelationManager extends RelationManager
                                             Forms\Components\TextInput::make('name')
                                                 ->required()
                                                 ->maxLength(255),
-                                        ]),
+                                        ])
+                                        ->createOptionUsing(function (array $data) {
+                                            return \App\Models\Brand::create([
+                                                'name' => $data['name'],
+                                                'store_id' => \Filament\Facades\Filament::getTenant()->id,
+                                                'is_active' => true,
+                                            ])->id;
+                                        }),
 
                                     Forms\Components\Select::make('measurement_unit_id')
                                         ->label('Unidad de Medida')

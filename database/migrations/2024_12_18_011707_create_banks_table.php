@@ -24,7 +24,7 @@ return new class extends Migration
             $table->id();
             $table->string('code')->unique()->comment('Código único del banco');
             $table->string('bank_name')->comment('Nombre del banco');
-            $table->string('code_bank_name')->virtualAs("CONCAT(code, ' - ', bank_name)")->comment('Código y nombre concatenados');
+            $table->string('code_bank_name')->storedAs("code || ' - ' || bank_name")->comment('Código y nombre concatenados');
             $table->timestamps();
         });
 
